@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Game Journal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="sky">
+    <h1>Game Journal</h1>
+    <p class="tagline">Log what you play, how far you got, and what you thought of it.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>New entry</h2>
+      <form id="entry-form" autocomplete="off">
+        <label class="field">
+          <span>Game title</span>
+          <input id="title" name="title" required maxlength="80" placeholder="e.g. Hollow Knight">
+        </label>
+
+        <div class="wheels">
+          <div class="wheel-field">
+            <span class="wheel-label" id="platform-label">Platform</span>
+            <div class="wheel" data-name="platform" aria-labelledby="platform-label"></div>
+          </div>
+          <div class="wheel-field">
+            <span class="wheel-label" id="status-label">Status</span>
+            <div class="wheel" data-name="status" aria-labelledby="status-label"></div>
+          </div>
+          <div class="wheel-field">
+            <span class="wheel-label" id="rating-label">Rating</span>
+            <div class="wheel" data-name="rating" aria-labelledby="rating-label"></div>
+          </div>
+          <div class="wheel-field">
+            <span class="wheel-label" id="hours-label">Hours</span>
+            <div class="wheel" data-name="hours" aria-labelledby="hours-label"></div>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Notes</span>
+          <textarea id="notes" name="notes" rows="3" maxlength="1000" placeholder="Thoughts, favourite moments, where you left off…"></textarea>
+        </label>
+
+        <button type="submit" class="btn">Add to journal</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="list-head">
+        <h2>Your journal</h2>
+        <span id="count" class="count"></span>
+      </div>
+      <ul id="entries" class="entries"></ul>
+      <p id="empty" class="empty">No entries yet. Add your first game above.</p>
+    </section>
+  </main>
+
+  <script src="wheel.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
