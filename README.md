@@ -1,6 +1,7 @@
 # Game Journal
 
-A small static web app for logging the games you play. Open `index.html` in a browser; entries are saved in your browser's localStorage.
+The live Game Journal site is `index.html` at the root of this branch. It is a single, self-contained page:
+discover feed, Project Formatter, News bank, 1-on-1, Bulletin, a Black / White glitch theme, and a hidden pirate flag.
+Everything people post is saved in their own browser.
 
-- **Palette:** light gold sky reflection, midnight violet and amethyst smoke (CSS variables at the top of `styles.css`).
-- **Scroll wheel picker** (`wheel.js`): Platform, Status, Rating and Hours are picked with snapping wheels that respond to the mouse wheel, touch/trackpad swipes, arrow / Page / Home / End keys, and clicks.
+The earlier version of the app (gold/violet/amethyst palette with scroll-wheel pickers) is kept in `old/`.
