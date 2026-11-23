@@ -1,0 +1,1731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Game Journal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: two independent views behind hash routes. OUTPUT = existing discover feed (unchanged design). INPUT = Project Formatter, opened from the + button. */
+:root{
+  color-scheme:dark;
+  --bg:#07070A; --panel:#0E0E14; --panel2:#0B0B11; --line:#1C1C27; --line2:#23232F; --line3:#2A2A38;
+  --fg:#E8E8F0; --muted:#9A9AB0; --soft:#B8B8CC; --faint:#6E6E84;
+  --violet:#7C3AED; --violet-ink:#C4A3FF; --violet-hi:#E9DDFF; --violet-line:#9B5CFF; --violet-bg:#1A0F33;
+  --blue:#3D8BFF; --blue-ink:#7FB2FF; --blue-bg:#08142A;
+  --green:#4ADE80; --green-line:#1F7A4D; --green-bg:#0B2416; --green-ink:#BBF7D0;
+  --red:#FF8A8A; --red-bg:#2A0E12; --red-line:#7A2A33;
+  --hdr:rgba(7,7,10,.92); --hover:#15151F; --dash:#2F2F40; --scanline:rgba(255,255,255,.04);
+  --pp-bg:#140B26; --pp-ink:#C4A3FF; --pp-line:#9B5CFF;
+  --pb-bg:#08142A; --pb-ink:#7FB2FF; --pb-line:#3D8BFF;
+  --pg-bg:#071A10; --pg-ink:#4ADE80; --pg-line:#1F7A4D;
+  --display:'Chakra Petch',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+/* White glitch palette: same structure, light ground, glitch layers kept */
+:root[data-gj="white"]{
+  color-scheme:light;
+  --bg:#F6F6F9; --panel:#FFFFFF; --panel2:#EFEFF4; --line:#E0E0E8; --line2:#D2D2DE; --line3:#C2C2D0;
+  --fg:#0A0A12; --muted:#55556A; --soft:#33334A; --faint:#85859B;
+  --violet:#7C3AED; --violet-ink:#6D28D9; --violet-hi:#4C1D95; --violet-line:#8B5CF6; --violet-bg:#EFE6FF;
+  --blue:#2563EB; --blue-ink:#1D4ED8; --blue-bg:#E6EEFF;
+  --green:#15803D; --green-line:#22C55E; --green-bg:#DCFCE7; --green-ink:#14532D;
+  --red:#B91C1C; --red-bg:#FEE2E2; --red-line:#F87171;
+  --hdr:rgba(246,246,249,.92); --hover:#E9E9F1; --dash:#B9B9CA; --scanline:rgba(0,0,0,.035);
+  --pp-bg:#F1E9FF; --pp-ink:#6D28D9; --pp-line:#8B5CF6;
+  --pb-bg:#E7EFFF; --pb-ink:#1D4ED8; --pb-line:#3B82F6;
+  --pg-bg:#E2F8E9; --pg-ink:#15803D; --pg-line:#22C55E;
+}
+.themesw{flex:none;display:inline-flex;padding:3px;gap:3px;border:1px solid var(--line2);border-radius:10px;background:var(--panel)}
+.themesw button{min-height:36px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:12px;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.themesw button i{width:12px;height:12px;border-radius:3px;border:1px solid var(--line3);display:block}
+.themesw button[aria-pressed="true"]{background:var(--violet);color:#fff}
+@keyframes swap{0%{transform:none}25%{transform:translate(-4px,0);clip-path:inset(10% 0 30% 0)}50%{transform:translate(4px,0);clip-path:inset(40% 0 5% 0)}75%{transform:translate(-2px,0);clip-path:none}100%{transform:none}}
+body.gj-swap main{animation:swap .32s steps(1)}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--mono);font-size:14px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+a{color:var(--violet-ink)}a:hover{color:var(--violet-hi)}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+@media (max-width:600px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+
+/* glitch */
+.gl{position:relative;display:inline-block}
+.gl .l1,.gl .l2{position:absolute;inset:0;pointer-events:none}
+.gl .l1{color:var(--violet-line);transform:translate(-2px,0);animation:g1 2.6s infinite steps(1)}
+.gl .l2{color:var(--blue);transform:translate(2px,0);animation:g2 2.6s infinite steps(1)}
+.gl .l0{position:relative}
+@keyframes g1{0%{clip-path:inset(0 0 85% 0)}12%{clip-path:inset(40% 0 35% 0);transform:translate(-3px,1px)}24%{clip-path:inset(80% 0 2% 0)}36%{clip-path:inset(10% 0 70% 0);transform:translate(-1px,0)}48%,100%{clip-path:inset(100% 0 0 0)}}
+@keyframes g2{0%{clip-path:inset(70% 0 10% 0)}10%{clip-path:inset(20% 0 60% 0);transform:translate(3px,-1px)}22%{clip-path:inset(55% 0 25% 0)}34%{clip-path:inset(0 0 90% 0);transform:translate(2px,0)}46%,100%{clip-path:inset(100% 0 0 0)}}
+.wm{position:relative}
+.wm::before,.wm::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;overflow:hidden}
+.wm::before{color:var(--violet-line);transform:translate(-2px,0);animation:g1 3.2s infinite steps(1)}
+.wm::after{color:var(--blue);transform:translate(2px,0);animation:g2 3.2s infinite steps(1)}
+.caret{display:inline-block;width:.55em;height:1em;background:var(--green);vertical-align:-.12em;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.scan{position:relative;overflow:hidden}
+.scan::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,var(--scanline) 0 1px,transparent 1px 3px);pointer-events:none}
+@media (prefers-reduced-motion:reduce){body.gj-swap main{animation:none}.gl .l1,.gl .l2,.wm::before,.wm::after,.caret{animation:none}.wm::before,.wm::after{display:none}}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--hdr);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+.top .wrap{padding-block:14px;display:flex;flex-wrap:wrap;align-items:center;gap:20px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--fg)}
+.brand .wm{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.12em}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{padding:10px 14px;border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px}
+.nav a[aria-current="page"]{background:var(--hover);color:var(--fg)}
+.nav a:hover{color:var(--fg)}
+.search{flex:1 1 420px;display:flex;justify-content:flex-end;align-items:center;gap:12px;min-width:0}
+.search label{flex:0 1 340px;min-width:0;display:flex;align-items:center;gap:10px;padding:0 14px;height:44px;border:1px solid var(--line2);border-radius:10px;background:var(--panel)}
+.search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--fg);font-family:inherit;font-size:13px}
+.avatar{width:44px;height:44px;flex:none;border-radius:10px;border:1px solid var(--green-line);background:var(--green-bg);color:var(--green-ink);font-weight:700;font-size:13px;display:grid;place-items:center}
+
+/* OUTPUT: discover */
+main.feed{padding-block:56px 40px}
+.hero{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-end;justify-content:space-between}
+.hero h1{margin:0;font-family:var(--display);font-size:clamp(44px,8vw,72px);line-height:1;font-weight:700;letter-spacing:.01em;text-wrap:balance}
+.prompt{margin:0 0 16px;font-size:13px;color:var(--green);letter-spacing:.08em;overflow-wrap:anywhere}
+.stat{padding:14px 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);min-width:150px}
+.stat .k{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.stat .v{margin-top:6px;font-size:14px}
+.pills{margin-top:14px;display:flex;gap:8px;overflow-x:auto;padding-bottom:6px}
+.pill{flex:none;height:44px;padding:0 18px;border-radius:10px;font-size:13px;cursor:pointer;border:1px solid var(--line2);background:var(--panel);color:var(--soft)}
+.pill[aria-pressed="true"]{border-color:var(--violet-line);background:var(--violet-bg);color:var(--violet-hi);box-shadow:0 0 14px rgba(155,92,255,.35)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:20px}
+.card{display:flex;flex-direction:column;text-decoration:none;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:transform .15s ease,border-color .15s ease}
+.card:hover{transform:translateY(-3px);border-color:var(--violet-line)}
+.card .art{height:150px;padding:16px;display:flex;flex-direction:column;justify-content:space-between}
+.card .meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;letter-spacing:.1em}
+.card .kind{padding:3px 8px;border-radius:5px;border:1px solid}
+.card .code{font-family:var(--display);font-weight:700;font-size:64px;line-height:1;letter-spacing:.06em}
+.card .body{padding:18px;display:flex;flex-direction:column;gap:10px;flex:1}
+.card h3{margin:0;font-family:var(--display);font-size:22px;font-weight:700;overflow-wrap:anywhere}
+.card .tag{font-size:12px;color:var(--blue-ink);overflow-wrap:anywhere}
+.card p{margin:0;font-size:13px;line-height:1.6;color:var(--soft);overflow-wrap:anywhere}
+.card .foot{margin-top:auto;padding-top:12px;border-top:1px dashed var(--line2);display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.chip-g{padding:4px 8px;border-radius:6px;background:var(--green-bg);color:var(--green-ink);border:1px solid var(--green-line)}
+.empty{padding:40px;border:1px dashed var(--line3);border-radius:14px;color:var(--muted);text-align:center;line-height:1.7}
+.cta{margin-top:56px;padding:32px;border:1px solid var(--line2);border-radius:16px;background:var(--panel2);display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:44px;padding:0 18px;border-radius:10px;font-size:13px;cursor:pointer;text-decoration:none;border:1px solid var(--line3);background:var(--panel);color:var(--fg)}
+.btn.primary{border-color:var(--violet-ink);background:var(--violet);color:#fff;font-weight:700}
+.btn.primary:hover{background:#8B4BFF;color:#fff}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn.ghost{background:transparent}
+.btn.danger{border-color:var(--red-line);color:var(--red)}
+footer.site{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted)}
+
+/* drafts list (my logs) */
+.drafts{margin-top:28px;display:flex;flex-direction:column;gap:10px}
+.draft{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--line2);border-radius:12px;background:var(--panel2)}
+.draft .t{font-family:var(--display);font-size:18px;font-weight:700;overflow-wrap:anywhere}
+.draft .s{font-size:12px;color:var(--muted)}
+
+/* FAB */
+.fabzone{position:fixed;right:calc(28px + env(safe-area-inset-right,0px));bottom:calc(28px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.fab{width:68px;height:68px;border-radius:18px;border:1px solid var(--violet-ink);background:var(--violet);color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:0 0 0 4px rgba(124,58,237,.18),0 12px 30px rgba(124,58,237,.35)}
+.fab:hover{background:#8B4BFF}
+.fab .l0{transition:transform .2s ease}
+.fab[aria-expanded="true"] .l0{transform:rotate(45deg)}
+.menu{width:300px;max-width:calc(100vw - 32px);background:var(--panel);border:1px solid var(--line3);border-radius:14px;padding:8px;box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.menu .h{padding:8px 12px;font-size:11px;letter-spacing:.12em;color:var(--muted)}
+.menu a{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;color:var(--fg);text-decoration:none}
+.menu a:hover{background:var(--hover)}
+.menu .ic{flex:none;width:36px;height:36px;border-radius:8px;display:grid;place-items:center}
+.menu b{display:block;font-size:14px}
+.menu small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+
+/* INPUT: formatter */
+.fhead{border-bottom:1px solid var(--line)}
+.fhead .wrap{padding-block:14px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.fhead .vis{font-size:12px;color:var(--muted)}
+.fmain{padding-block:44px 120px}
+.fmain h1{margin:12px 0 0;font-family:var(--display);font-size:clamp(40px,7vw,56px);line-height:1;font-weight:700}
+.seg{margin-top:28px;display:inline-flex;padding:4px;border:1px solid var(--line2);border-radius:12px;background:var(--panel);gap:4px;flex-wrap:wrap}
+.seg button{min-height:44px;padding:0 18px;border-radius:9px;border:0;font-size:13px;cursor:pointer;background:transparent;color:var(--soft)}
+.seg button[aria-pressed="true"]{background:var(--violet);color:#fff;font-weight:700}
+.cols{margin-top:32px;display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+form.fmt{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:28px}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:22px;margin:0;display:flex;flex-direction:column;gap:20px;min-width:0}
+legend{padding:0 8px;font-family:var(--display);font-size:13px;letter-spacing:.18em;color:var(--muted)}
+.lbl{display:block;font-size:12px;letter-spacing:.08em;color:var(--soft);margin-bottom:8px}
+.fld{width:100%;background:var(--panel);border:1px solid var(--line2);border-radius:10px;color:var(--fg);font-family:inherit;font-size:14px;padding:12px 14px;outline:none;min-height:48px}
+textarea.fld{resize:vertical;line-height:1.6}
+.fld:focus{border-color:var(--violet-line);box-shadow:0 0 0 3px rgba(155,92,255,.25)}
+.fld::placeholder{color:var(--faint)}
+.fld[aria-invalid="true"]{border-color:var(--red-line)}
+.hint{margin:6px 0 0;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:12px}
+.hint .n{font-variant-numeric:tabular-nums;flex:none}
+.err{margin:6px 0 0;font-size:12px;color:var(--red)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:0 16px;border-radius:10px;font-size:13px;cursor:pointer;border:1px solid var(--line2);background:var(--panel);color:var(--soft)}
+.chip[aria-pressed="true"]{border-color:var(--violet-line);background:var(--violet-bg);color:var(--violet-hi)}
+.chip.role[aria-pressed="true"]{border-color:var(--green-line);background:var(--green-bg);color:var(--green-ink)}
+.row{display:flex;gap:8px;align-items:flex-start}
+.row .fld{flex:1;min-width:0}
+.idx{flex:none;width:32px;min-height:48px;display:grid;place-items:center;color:var(--green);font-size:12px}
+.iconbtn{flex:none;width:48px;height:48px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.iconbtn:hover{color:var(--red);border-color:var(--red-line)}
+.list{display:flex;flex-direction:column;gap:8px}
+.tl .row .fld.date{flex:0 0 150px}
+@media (max-width:560px){.tl .row{flex-wrap:wrap}.tl .row .fld.date{flex:1 1 100%}}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{min-height:44px;padding:0 14px 0 8px;border-radius:10px;border:1px solid var(--line2);background:var(--panel);color:var(--soft);display:inline-flex;align-items:center;gap:10px;font-size:13px;cursor:pointer}
+.sw i{width:26px;height:26px;border-radius:7px;border:1px solid var(--line3);display:block}
+.sw[aria-pressed="true"]{border-color:var(--violet-line);color:var(--violet-hi);box-shadow:0 0 0 2px rgba(155,92,255,.3)}
+.drop{border:1px dashed var(--dash);border-radius:12px;padding:22px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;background:var(--panel2)}
+.drop.over{border-color:var(--violet-line);background:var(--violet-bg)}
+.drop img{width:120px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--line3)}
+.summary{padding:14px 16px;border:1px solid var(--red-line);background:var(--red-bg);border-radius:12px;color:var(--red);font-size:13px;line-height:1.6}
+.summary ul{margin:6px 0 0;padding-left:18px}
+.summary a{color:var(--red)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font-size:12px;color:var(--muted)}
+aside.prev{flex:1 1 340px;min-width:0;position:sticky;top:calc(24px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:16px}
+.prevbox{padding:16px;border:1px solid var(--line2);border-radius:14px;background:var(--panel2);font-size:12px;line-height:1.7;color:var(--muted)}
+.prevbox h4{margin:0 0 6px;font-family:var(--display);font-size:13px;letter-spacing:.14em;color:var(--muted);font-weight:600}
+.prevbox ol,.prevbox ul{margin:4px 0 0;padding-left:18px;color:var(--soft)}
+.ok{color:var(--green)}
+.map{width:100%;border-collapse:collapse;font-size:12px}
+.map td{padding:4px 0;border-bottom:1px dashed var(--line2);vertical-align:top}
+.map td:last-child{text-align:right;color:var(--soft)}
+
+/* boards: news, bulletin, 1-on-1 */
+.lede{margin:20px 0 0;max-width:600px;font-size:15px;line-height:1.6;color:var(--muted)}
+.fmain .lede{margin-top:16px}
+.extag{font-size:10px;letter-spacing:.12em;padding:2px 6px;border:1px dashed var(--line3);border-radius:4px;color:var(--muted)}
+.news{margin-top:28px;border-top:1px solid var(--line)}
+.nrow{display:grid;grid-template-columns:130px minmax(0,1fr);gap:24px;padding-block:22px;border-bottom:1px solid var(--line)}
+@media (max-width:640px){.nrow{grid-template-columns:1fr;gap:8px}}
+.ndate{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:4px}
+.nmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px}
+.ncat{padding:3px 8px;border-radius:5px;border:1px solid var(--violet-line);color:var(--violet-ink);letter-spacing:.08em}
+.nrel{color:var(--blue-ink)}
+.nrow h3{margin:10px 0 0;font-family:var(--display);font-size:22px;line-height:1.25;text-wrap:balance;overflow-wrap:anywhere}
+.nrow h3 a{color:var(--fg);text-decoration:none}.nrow h3 a:hover{color:var(--violet-ink);text-decoration:underline}
+.nrow p{margin:8px 0 0;max-width:68ch;font-size:13px;line-height:1.7;color:var(--soft);overflow-wrap:anywhere}
+.nsrc{margin-top:10px;font-size:12px;color:var(--muted)}
+.bboard{margin-top:28px;columns:300px;column-gap:20px}
+.note{break-inside:avoid;margin:0 0 20px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.nhead{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.ptype{font-size:11px;letter-spacing:.12em;padding:3px 8px;border-radius:5px;border:1px solid var(--line3);color:var(--soft)}
+.t-shoutout{border-color:var(--green-line);color:var(--green);background:var(--green-bg)}
+.t-feedback{border-color:var(--blue);color:var(--blue-ink);background:var(--blue-bg)}
+.t-spotted{border-color:var(--violet-line);color:var(--violet-ink);background:var(--violet-bg)}
+.re{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.re span{color:var(--blue-ink)}.re .seen,.re .seen a{color:var(--fg)}
+.note p{margin:0;font-size:14px;line-height:1.65;color:var(--soft);overflow-wrap:anywhere}
+.nfoot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-top:12px;border-top:1px dashed var(--line2);font-size:12px;color:var(--muted)}
+.plus{flex:none;min-height:44px;min-width:56px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:12px;cursor:pointer}
+.plus[aria-pressed="true"]{border-color:var(--violet-line);color:var(--violet-ink);background:var(--violet-bg)}
+.duel{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.vs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;padding:20px 18px;background:var(--panel2);border-bottom:1px solid var(--line)}
+.vs .k{font-size:10px;letter-spacing:.14em;color:var(--muted)}
+.vs .hn{margin-top:4px;font-family:var(--display);font-weight:700;font-size:18px;overflow-wrap:anywhere}
+.vs .hn.open{color:var(--green)}
+.vs .r{text-align:right}
+.vs .x{font-family:var(--display);font-weight:700;font-size:34px;line-height:1;color:var(--violet-ink);letter-spacing:.04em}
+.dbody{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1}
+.dtop{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:11px}
+.st{padding:3px 8px;border-radius:5px;letter-spacing:.1em;border:1px solid var(--line3);color:var(--muted)}
+.st-open{color:var(--green);border-color:var(--green-line);background:var(--green-bg)}
+.st-accepted{color:var(--blue-ink);border-color:var(--blue);background:var(--blue-bg)}
+.dkind{color:var(--soft)}
+.duel h3{margin:0;font-family:var(--display);font-size:22px;overflow-wrap:anywhere}
+.dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 14px;margin:0;font-size:12px}
+.dl dt{color:var(--muted);letter-spacing:.08em}.dl dd{margin:0;color:var(--fg);font-variant-numeric:tabular-nums}
+.duel p{margin:0;font-size:13px;line-height:1.6;color:var(--soft);overflow-wrap:anywhere}
+.duel .err{color:var(--red)}
+.duel .actions{margin-top:auto;padding-top:12px;border-top:1px dashed var(--line2)}
+.acc{display:flex;flex-wrap:wrap;gap:8px;width:100%}.acc .fld{flex:1 1 160px;min-width:0}
+.nav a{padding:10px 12px}
+
+/* review queue (admins) */
+.rvq{margin-top:28px;display:flex;flex-direction:column;gap:16px}
+.rv{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.rvtop{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px;color:var(--muted)}
+.rvk{padding:3px 8px;border-radius:5px;border:1px solid var(--blue);color:var(--blue-ink);background:var(--blue-bg);font-size:11px;letter-spacing:.1em}
+.rv h3{margin:0;font-family:var(--display);font-size:22px;overflow-wrap:anywhere}
+.rvd{display:grid;grid-template-columns:150px minmax(0,1fr);gap:8px 16px;margin:0;font-size:13px}
+@media (max-width:560px){.rvd{grid-template-columns:1fr;gap:2px}.rvd dd{margin-bottom:8px}}
+.rvd dt{color:var(--muted);font-size:11px;letter-spacing:.1em;padding-top:2px}
+.rvd dd{margin:0;color:var(--fg);line-height:1.6;overflow-wrap:anywhere;white-space:pre-wrap}
+.rvd ul{margin:0;padding-left:18px;white-space:normal}
+.rvd img{max-width:min(260px,100%);border-radius:8px;border:1px solid var(--line3)}
+.rv .actions{padding-top:14px;border-top:1px dashed var(--line2)}
+.rvnote{display:flex;flex-wrap:wrap;gap:8px;width:100%}.rvnote .fld{flex:1 1 220px;min-width:0}
+.demo{margin-top:20px;padding:12px 14px;border:1px dashed var(--line3);border-radius:10px;font-size:12px;line-height:1.6;color:var(--muted);max-width:720px}
+
+/* hidden flag */
+.jolly{display:inline-grid;place-items:center;width:28px;height:28px;padding:0;border:0;background:transparent;color:var(--muted);opacity:.38;cursor:pointer;vertical-align:middle;transition:opacity .2s ease,transform .2s ease}
+.jolly:hover,.jolly:focus-visible{opacity:1;transform:rotate(-8deg) scale(1.15);color:var(--fg)}
+.jolly svg{display:block}
+.jolly.float{position:absolute;z-index:2}
+
+/* toast */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:20;max-width:calc(100vw - 32px);padding:14px 18px;border-radius:12px;font-size:13px;border:1px solid var(--green-line);background:var(--green-bg);color:var(--green-ink);box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.toast.bad{border-color:var(--red-line);background:var(--red-bg);color:var(--red)}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a href="#discover" class="brand" aria-label="Game Journal home">
+      <span class="gl" style="width:44px;height:34px" aria-hidden="true">
+        <svg class="l1" viewBox="0 -10 120 100" width="44" height="34" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M14 20 Q14 12 22 12 L56 14 L60 18 L64 14 L98 12 Q106 12 106 20 L112 62 Q114 78 100 78 Q92 78 86 66 L80 58 L40 58 L34 66 Q28 78 20 78 Q6 78 8 62 Z"/></svg>
+        <svg class="l2" viewBox="0 -10 120 100" width="44" height="34" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M14 20 Q14 12 22 12 L56 14 L60 18 L64 14 L98 12 Q106 12 106 20 L112 62 Q114 78 100 78 Q92 78 86 66 L80 58 L40 58 L34 66 Q28 78 20 78 Q6 78 8 62 Z"/></svg>
+        <svg class="l0" viewBox="0 -10 120 100" width="44" height="34" fill="none" style="stroke:var(--fg)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"><path d="M14 20 Q14 12 22 12 L56 14 L60 18 L64 14 L98 12 Q106 12 106 20 L112 62 Q114 78 100 78 Q92 78 86 66 L80 58 L40 58 L34 66 Q28 78 20 78 Q6 78 8 62 Z" style="fill:var(--panel)"/><path d="M60 18 L60 58"/><path d="M30 34 h14 M37 27 v14" stroke="#C4A3FF"/><circle cx="86" cy="28" r="2.5" fill="#7FB2FF" stroke="none"/><circle cx="94" cy="36" r="2.5" fill="#4ADE80" stroke="none"/><circle cx="78" cy="36" r="2.5" fill="#C4A3FF" stroke="none"/><circle cx="86" cy="44" r="2.5" fill="#7FB2FF" stroke="none"/><g transform="rotate(28 66 30)"><rect x="63" y="-8" width="7" height="44" rx="2" style="fill:var(--bg)" stroke="#4ADE80" stroke-width="3.5"/><path d="M63 36 L70 36 L66.5 46 Z" fill="#4ADE80" stroke="#4ADE80" stroke-width="2"/></g></svg>
+      </span>
+      <span class="wm" data-text="GAME JOURNAL">GAME JOURNAL</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#discover" data-route="discover">./discover</a>
+      <a href="#projects" data-route="projects">./projects</a>
+      <a href="#one-on-one" data-route="one-on-one">./1on1</a>
+      <a href="#bulletin" data-route="bulletin">./bulletin</a>
+      <a href="#news" data-route="news">./news</a>
+      <a href="#my-logs" data-route="my-logs">./my_logs</a>
+      <a href="#review" data-route="review" id="navReview" data-admin-only hidden>./review</a>
+    </nav>
+    <div class="search">
+      <label>
+        <span style="color:var(--green)" aria-hidden="true">&gt;</span>
+        <span class="sr">Search logs, projects or tags</span>
+        <input id="q" type="search" placeholder="grep logs, projects, #tags">
+      </label>
+      <div class="themesw" role="group" aria-label="Color palette">
+        <button type="button" data-gj-set="black" aria-pressed="true"><i style="background:#07070A"></i>BLACK</button>
+        <button type="button" data-gj-set="white" aria-pressed="false"><i style="background:#FFFFFF"></i>WHITE</button>
+      </div>
+      <span class="avatar" id="avatar" aria-label="Your handle">GJ</span>
+    </div>
+  </div>
+</header>
+
+<!-- ============ OUTPUT: existing published-project display ============ -->
+<div id="view-feed">
+  <main class="feed wrap">
+    <section class="hero">
+      <div style="flex:1 1 520px;min-width:0">
+        <p class="prompt" id="feedPrompt">root@gamejournal:~$ discover --all<span class="caret" aria-hidden="true"></span></p>
+        <h1 class="wm" data-text="LOG THE BUILD.">LOG THE BUILD.</h1>
+        <h1 style="margin-top:4px;color:var(--violet-ink)">FIND YOUR PARTY.</h1>
+        <p style="margin:20px 0 0;max-width:560px;font-size:15px;line-height:1.6;color:var(--muted)">Dev logs and game projects from people building in public. Follow the progress, drop feedback, or join a project that needs your skills.</p>
+        <p style="margin:10px 0 0;max-width:560px;font-size:12px;line-height:1.6;color:var(--muted)">Public preview: anything you publish here, including 1-on-1s, bulletin posts and news, is saved in this browser only, so other visitors won't see it.</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div class="stat"><div class="k">STATUS</div><div class="v" id="netStatus" style="color:var(--green)">● online</div></div>
+        <div class="stat"><div class="k">YOUR DRAFTS</div><div class="v" id="draftStat" style="color:var(--blue-ink)">0 saved</div></div>
+      </div>
+    </section>
+
+    <section style="margin-top:48px" aria-label="Filter by genre">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <h2 style="margin:0;font-family:var(--display);font-size:14px;letter-spacing:.18em;color:var(--muted)" id="feedHeading">// GENRES</h2>
+        <span style="font-size:12px;color:var(--muted)">sort: newest ↓</span>
+      </div>
+      <div class="pills" id="pills"></div>
+    </section>
+
+    <section style="margin-top:28px" aria-label="Logs and projects">
+      <div class="grid" id="grid"></div>
+      <div id="mine"></div>
+    </section>
+
+    <section class="cta">
+      <div style="flex:1 1 420px;min-width:0">
+        <div style="font-size:12px;color:var(--green)">&gt; new_entry</div>
+        <h2 style="margin:8px 0 0;font-family:var(--display);font-size:30px">Shipped something today?</h2>
+        <p style="margin:8px 0 0;font-size:14px;color:var(--muted)">Post a quick log on a game you're making, or start a project people can join.</p>
+      </div>
+      <a href="#create-log" class="btn primary" style="height:48px;padding:0 22px">+ Create a log</a>
+    </section>
+
+    <footer class="site">
+      <span>game_journal // log the build. v0.2</span>
+      <span><a href="#discover">guidelines</a> · <a href="#discover">help</a></span>
+    </footer>
+  </main>
+
+</div>
+
+<!-- ============ INPUT: Project Formatter ============ -->
+<div id="view-create" hidden>
+  <div class="fhead">
+    <div class="wrap">
+      <a href="#discover" class="btn ghost" style="border:0;padding:0">← back to feed</a>
+      <span class="vis" id="visLine">draft · only you can see this</span>
+      <div class="actions">
+        <button type="button" class="btn" id="saveDraft">Save draft</button>
+        <button type="button" class="btn primary" id="publishTop">Publish project</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="fmain wrap">
+    <p class="prompt" style="margin:0" id="fPrompt">root@gamejournal:~$ new_entry --type=project<span class="caret" aria-hidden="true"></span></p>
+    <h1 class="wm" data-text="+ NEW ENTRY">+ NEW ENTRY</h1>
+
+    <div class="seg" role="group" aria-label="Entry type">
+      <button type="button" id="modeLog" aria-pressed="false">Create a log</button>
+      <button type="button" id="modeProject" aria-pressed="true">Create a project</button>
+    </div>
+
+    <div class="cols">
+      <form class="fmt" id="form" novalidate>
+        <div class="summary" id="summary" role="alert" tabindex="-1" hidden></div>
+
+        <!-- PROJECT MODE -->
+        <div id="projectFields" style="display:flex;flex-direction:column;gap:28px">
+          <fieldset>
+            <legend>// IDENTITY</legend>
+            <div>
+              <label class="lbl" for="f-title">PROJECT TITLE *</label>
+              <input id="f-title" class="fld" maxlength="80" placeholder="Give your project a name…" autocomplete="off">
+              <p class="hint"><span>Short, memorable and easy to share.</span><span class="n" data-count="f-title">0 / 80</span></p>
+              <p class="err" id="e-title" hidden></p>
+            </div>
+            <div>
+              <label class="lbl" for="f-tag">CORE HASHTAG *</label>
+              <input id="f-tag" class="fld" maxlength="31" placeholder="#YourProject" autocomplete="off">
+              <p class="hint"><span>Letters and numbers only. Leave blank to build one from the title.</span><span class="n" data-count="f-tag">0 / 30</span></p>
+              <p class="err" id="e-tag" hidden></p>
+            </div>
+            <div>
+              <label class="lbl" for="f-handle">YOUR HANDLE *</label>
+              <input id="f-handle" class="fld" maxlength="24" placeholder="byte_rook" autocomplete="off">
+              <p class="hint"><span>Shown as @handle on your feed card. Spaces become _ and other symbols are removed as you type.</span></p>
+              <p class="err" id="e-handle" hidden></p>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>// THE ARGUMENT</legend>
+            <div>
+              <label class="lbl" for="f-desc">MAIN DESCRIPTION *</label>
+              <textarea id="f-desc" class="fld" rows="3" maxlength="240" placeholder="What is it, and why should people care?"></textarea>
+              <p class="hint"><span>This is the line that shows on your feed card.</span><span class="n" data-count="f-desc">0 / 240</span></p>
+              <p class="err" id="e-desc" hidden></p>
+            </div>
+            <div>
+              <span class="lbl" id="l-demands">DEMANDS &amp; KEY POINTS * · at least one</span>
+              <div class="list" id="demands" aria-labelledby="l-demands"></div>
+              <p class="err" id="e-demands" hidden></p>
+              <div style="margin-top:10px"><button type="button" class="btn" id="addDemand">+ Add point</button></div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>// CONTEXT · OPTIONAL</legend>
+            <div>
+              <label class="lbl" for="f-bg">BACKGROUND</label>
+              <textarea id="f-bg" class="fld" rows="4" maxlength="1200" placeholder="How did this start? What has already happened?"></textarea>
+              <p class="hint"><span>Kept with the project. Not shown on the feed card.</span><span class="n" data-count="f-bg">0 / 1200</span></p>
+            </div>
+            <div class="tl">
+              <span class="lbl" id="l-tl">TIMELINE</span>
+              <div class="list" id="timeline" aria-labelledby="l-tl"></div>
+              <div style="margin-top:10px"><button type="button" class="btn" id="addMilestone">+ Add milestone</button></div>
+            </div>
+            <div>
+              <span class="lbl">LOOKING FOR</span>
+              <div class="chips" id="roles"></div>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- LOG MODE -->
+        <fieldset id="logFields" hidden>
+          <legend>// LOG</legend>
+          <div>
+            <label class="lbl" for="f-proj">PROJECT *</label>
+            <select id="f-proj" class="fld"></select>
+            <p class="hint"><span>Logs attach to a project on the feed.</span></p>
+          </div>
+          <div>
+            <label class="lbl" for="f-head">LOG HEADLINE *</label>
+            <input id="f-head" class="fld" maxlength="80" placeholder="New progress on the RPG!" autocomplete="off">
+            <p class="hint"><span>One line on what changed.</span><span class="n" data-count="f-head">0 / 80</span></p>
+            <p class="err" id="e-head" hidden></p>
+          </div>
+          <div>
+            <label class="lbl" for="f-lbody">WHAT DID YOU BUILD? *</label>
+            <textarea id="f-lbody" class="fld" rows="5" maxlength="800" placeholder="Dungeon 2 is fully playable…"></textarea>
+            <p class="hint"><span>Shows under the headline on the card.</span><span class="n" data-count="f-lbody">0 / 800</span></p>
+            <p class="err" id="e-lbody" hidden></p>
+          </div>
+          <div>
+            <label class="lbl" for="f-lhandle">YOUR HANDLE *</label>
+            <input id="f-lhandle" class="fld" maxlength="24" placeholder="byte_rook" autocomplete="off">
+            <p class="err" id="e-lhandle" hidden></p>
+          </div>
+          <div>
+            <span class="lbl">UPDATE TYPE</span>
+            <div class="chips" id="utypes"></div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>// LOOK</legend>
+          <div>
+            <span class="lbl" id="l-genre">GENRE *</span>
+            <div class="chips" id="genres" role="group" aria-labelledby="l-genre"></div>
+            <p class="err" id="e-genre" hidden></p>
+          </div>
+          <div id="colorBlock">
+            <span class="lbl" id="l-c1">PRIMARY COLOR</span>
+            <div class="swatches" id="c1" role="group" aria-labelledby="l-c1"></div>
+            <span class="lbl" id="l-c2" style="margin-top:16px">SECONDARY COLOR</span>
+            <div class="swatches" id="c2" role="group" aria-labelledby="l-c2"></div>
+            <p class="hint"><span id="paletteNote"></span></p>
+          </div>
+          <div>
+            <span class="lbl">PROJECT IMAGE · OPTIONAL</span>
+            <div class="drop" id="drop">
+              <div style="display:flex;gap:14px;align-items:center;min-width:0">
+                <img id="imgPrev" alt="Uploaded project image" hidden>
+                <div style="min-width:0">
+                  <div id="imgName" style="font-size:14px;overflow-wrap:anywhere">Drop an image here, or browse</div>
+                  <div style="margin-top:4px;font-size:12px;color:var(--muted)">PNG, JPG, GIF or WebP · resized to 800px · kept with the project</div>
+                </div>
+              </div>
+              <div class="actions">
+                <button type="button" class="btn" id="imgClear" hidden>Remove</button>
+                <label class="btn" style="border-color:var(--blue);background:var(--blue-bg);color:var(--blue-ink)">Choose file<input id="f-img" type="file" accept="image/png,image/jpeg,image/gif,image/webp" class="sr"></label>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" class="btn primary" id="publish">Publish project</button>
+          <button type="button" class="btn" id="saveDraft2">Save draft</button>
+          <button type="button" class="btn ghost" id="discard">Clear form</button>
+          <span class="status" id="fstatus" role="status">Nothing goes live until you publish.</span>
+        </div>
+      </form>
+
+      <aside class="prev" aria-label="Private review">
+        <div class="prevbox">
+          <h4>// REVIEW · PRIVATE</h4>
+          <div>Only you see this. It checks what you entered; it is not the public card.</div>
+          <div id="checklist" style="margin-top:10px"></div>
+        </div>
+        <div class="prevbox">
+          <h4>// WHAT THE FEED WILL SHOW</h4>
+          <table class="map"><tbody id="mapping"></tbody></table>
+          <div style="margin-top:10px" id="keptNote"></div>
+        </div>
+        <div class="prevbox" id="pointsBox">
+          <h4>// YOUR POINTS</h4>
+          <ol id="pointsList"></ol>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<!-- ============ OUTPUT boards + INPUT forms for news, bulletin, 1-on-1 ============ -->
+<div id="view-news" class="xview" hidden></div>
+<div id="view-bulletin" class="xview" hidden></div>
+<div id="view-1on1" class="xview" hidden></div>
+<div id="view-xform" class="xview" hidden></div>
+<div id="view-review" class="xview" hidden></div>
+
+  <div class="fabzone" id="fabzone">
+    <div class="menu" id="menu" hidden>
+      <div class="h">CREATE</div>
+      <a href="#create-log">
+        <span class="ic" style="background:var(--violet-bg);border:1px solid var(--violet-line);color:var(--violet-ink)" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2z"/><path d="M8 8h6M8 12h4"/><path d="M20 3l-6 6"/></svg></span>
+        <span><b>New log</b><small>Post progress on a game</small></span>
+      </a>
+      <a href="#create">
+        <span class="ic" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue-ink)" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="7" width="18" height="11" rx="4"/><path d="M8 10v5M5.5 12.5h5"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="14" r="1"/></svg></span>
+        <span><b>New project</b><small>Start something people can join</small></span>
+      </a>
+      <a href="#new-1on1">
+        <span class="ic" style="background:var(--green-bg);border:1px solid var(--green-line);color:var(--green)" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 20c0-3 2.2-5 5-5s5 2 5 5M12 20c0-3 2.2-5 5-5s5 2 5 5"/></svg></span>
+        <span><b>New 1-on-1</b><small>Match, playtest or feedback session</small></span>
+      </a>
+      <a href="#new-post">
+        <span class="ic" style="background:var(--violet-bg);border:1px solid var(--violet-line);color:var(--violet-ink)" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6l-1 6 3 3H7l3-3z"/><path d="M12 12v9"/></svg></span>
+        <span><b>Bulletin post</b><small>About a project or something you saw</small></span>
+      </a>
+      <a href="#add-news">
+        <span class="ic" style="background:var(--blue-bg);border:1px solid var(--blue);color:var(--blue-ink)" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h8"/></svg></span>
+        <span><b>Add news</b><small>Save a story to the news bank</small></span>
+      </a>
+    </div>
+    <button type="button" class="fab" id="fab" aria-label="Create a log or project" aria-expanded="false" aria-controls="menu">
+      <span class="gl" style="width:30px;height:30px" aria-hidden="true">
+        <svg class="l1" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M12 3v18M3 12h18"/></svg>
+        <svg class="l2" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#4ADE80" stroke-width="3" stroke-linecap="square"><path d="M12 3v18M3 12h18"/></svg>
+        <svg class="l0" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="square"><path d="M12 3v18M3 12h18"/></svg>
+      </span>
+    </button>
+  </div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* ===== Data layer: one API, two backends =====
+   local: public link. Everything stays in this browser. The owner's own submissions go to a review demo queue.
+   db:    organization site. Shared store; every submission waits in pending/<user> until an admin approves it. */
+window.GJD = (function(){
+  'use strict';
+  var MODE = 'local';
+  var LABEL = { entries:'Project / log', news:'News', posts:'Bulletin post', duels:'1-on-1' };
+  var COLL = { entries:'entries', news:'news', posts:'posts', duels:'duels' };
+  var cache = { entries:[], news:[], posts:[], duels:[], acts:{}, plusCounts:{}, plusMine:{}, plus:null, pending:[], mine:[], status:null };
+  var subs = {};
+  var state = { admin:false, ready:false, off:false, uid:null };
+  function emit(k){ (subs[k] || []).forEach(function(cb){ try { cb(cache[k]); } catch(e){ console.error(e); } }); }
+  function on(k, cb){ (subs[k] = subs[k] || []).push(cb); try { cb(cache[k]); } catch(e){ console.error(e); } }
+  var ls = {
+    get:function(k, d){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+    set:function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+  };
+  var isObj = function(o){ return o && typeof o === 'object' && !Array.isArray(o); };
+  function titleOf(kind, r){
+    if (kind === 'entries') return r.kind === 'LOG' ? (r.headline || r.title) : r.title;
+    if (kind === 'news') return r.headline;
+    if (kind === 'posts') return r.about === 'project' ? 'Post about ' + (r.project || 'a project') : (r.seenTitle || 'Bulletin post');
+    return r.kind + ' · ' + r.game;
+  }
+  function byOf(r){ return r.author || r.host || ''; }
+  function finalize(kind, rec){
+    var r = Object.assign({}, rec, { approvedAt:Date.now() });
+    if (kind === 'entries') { r.status = 'published'; r.publishedAt = Date.now(); }
+    return r;
+  }
+
+  /* ---------- local backend ---------- */
+  var LK = { entries:'gj.published', news:'gj.x.news', posts:'gj.x.bulletin', duels:'gj.x.duels', pending:'gj.pending', acts:'gj.x.acts', plus:'gj.x.plus' };
+  function localLoad(){
+    ['entries', 'news', 'posts', 'duels'].forEach(function(k){ var v = ls.get(LK[k], []); cache[k] = Array.isArray(v) ? v : []; });
+    var a = ls.get(LK.acts, {}); cache.acts = isObj(a) ? a : {};
+    var m = ls.get(LK.plus, {}); cache.plusMine = isObj(m) ? m : {};
+    cache.plusCounts = {}; Object.keys(cache.plusMine).forEach(function(id){ if (cache.plusMine[id]) cache.plusCounts[id] = 1; });
+    var p = ls.get(LK.pending, []); cache.pending = cache.mine = Array.isArray(p) ? p : [];
+  }
+  function localPublish(kind, rec){
+    var list = ls.get(LK[kind], []); if (!Array.isArray(list)) list = [];
+    var i = list.findIndex(function(x){ return x.id === rec.id; });
+    if (i > -1) list[i] = rec; else list.unshift(rec);
+    if (!ls.set(LK[kind], list)) return Promise.reject({ code:'quota_exceeded' });
+    cache[kind] = list; emit(kind); return Promise.resolve();
+  }
+  function localPending(fn){
+    var list = ls.get(LK.pending, []); if (!Array.isArray(list)) list = [];
+    list = fn(list);
+    if (!ls.set(LK.pending, list)) return Promise.reject({ code:'quota_exceeded' });
+    cache.pending = cache.mine = list; emit('pending'); emit('mine'); return Promise.resolve();
+  }
+  var local = {
+    submit:function(kind, rec){
+      if (!state.admin) return localPublish(kind, rec).then(function(){ return { pending:false }; });
+      var item = { id:rec.id, kind:kind, rec:rec, title:titleOf(kind, rec), by:byOf(rec), at:Date.now(), status:'pending' };
+      return localPending(function(l){ l = l.filter(function(x){ return x.id !== rec.id; }); l.unshift(item); return l; }).then(function(){ return { pending:true }; });
+    },
+    getItem:function(p){ return Promise.resolve({ kind:p.kind, rec:p.rec }); },
+    approve:function(p){ return localPublish(p.kind, finalize(p.kind, p.rec)).then(function(){ return localPending(function(l){ return l.filter(function(x){ return x.id !== p.id; }); }); }); },
+    reject:function(p, note){ return localPending(function(l){ return l.map(function(x){ return x.id === p.id ? Object.assign({}, x, { status:'rejected', note:note || '' }) : x; }); }); },
+    dismiss:function(id){ return localPending(function(l){ return l.filter(function(x){ return x.id !== id; }); }); },
+    act:function(id, patch){ cache.acts[id] = Object.assign({}, patch, { at:Date.now() }); if (!ls.set(LK.acts, cache.acts)) return Promise.reject({ code:'quota_exceeded' }); emit('acts'); return Promise.resolve(); },
+    togglePlus:function(id){
+      var m = Object.assign({}, cache.plusMine); if (m[id]) delete m[id]; else m[id] = true;
+      if (!ls.set(LK.plus, m)) return Promise.reject({ code:'quota_exceeded' });
+      cache.plusMine = m; cache.plusCounts = {}; Object.keys(m).forEach(function(k){ cache.plusCounts[k] = 1; }); emit('plus'); return Promise.resolve();
+    }
+  };
+  function localInit(){
+    localLoad(); state.ready = true;
+    if (window.claude && window.claude.use) {
+      window.claude.use('user').then(function(u){ return u ? u.isOwner() : false; }).then(function(owner){ state.admin = !!owner; emit('status'); emit('pending'); }).catch(function(){});
+    }
+  }
+
+  /* ---------- shared (db) backend ---------- */
+  var db = null;
+  function retry(fn){ return fn().catch(function(e){ if (e && e.code === 'unavailable') return new Promise(function(r){ setTimeout(r, 500 + Math.random() * 700); }).then(fn); throw e; }); }
+  function indexList(uid, data){ var items = (data && data.items) || {}; return Object.keys(items).map(function(id){ return Object.assign({ id:id, uid:uid }, items[id]); }).sort(function(a, b){ return b.at - a.at; }); }
+  function setIndex(uid, id, meta){
+    var ref = db.doc('pending/' + uid);
+    return retry(function(){ return ref.get(); }).then(function(s){
+      var data = s.exists ? JSON.parse(JSON.stringify(s.data())) : {};
+      data.items = data.items || {};
+      if (meta === null) delete data.items[id]; else data.items[id] = Object.assign({}, data.items[id] || {}, meta);
+      data.updatedAt = Date.now();
+      return retry(function(){ return ref.set(data); });
+    });
+  }
+  function need(){ if (!db) return Promise.reject({ code:'offline' }); if (!state.uid) return Promise.reject({ code:'no_id' }); return null; }
+  var shared = {
+    submit:function(kind, rec){
+      var n = need(); if (n) return n;
+      var base = 'pending/' + state.uid, at = Date.now();
+      return retry(function(){ return db.doc(base + '/items/' + rec.id).set({ kind:kind, rec:rec, at:at }); })
+        .then(function(){ return setIndex(state.uid, rec.id, { kind:kind, title:titleOf(kind, rec), by:byOf(rec), at:at, status:'pending', note:'' }); })
+        .then(function(){ return { pending:true }; });
+    },
+    getItem:function(p){
+      return retry(function(){ return db.doc('pending/' + p.uid + '/items/' + p.id).get(); }).then(function(s){ if (!s.exists) throw { code:'gone' }; var d = s.data(); return { kind:d.kind, rec:d.rec }; });
+    },
+    approve:function(p){
+      return shared.getItem(p).then(function(d){ return retry(function(){ return db.doc(COLL[d.kind] + '/' + p.id).set(finalize(d.kind, d.rec)); }); })
+        .then(function(){ return retry(function(){ return db.doc('pending/' + p.uid + '/items/' + p.id).delete(); }); })
+        .then(function(){ return setIndex(p.uid, p.id, null); });
+    },
+    reject:function(p, note){
+      return retry(function(){ return db.doc('pending/' + p.uid + '/items/' + p.id).delete(); })
+        .then(function(){ return setIndex(p.uid, p.id, { status:'rejected', note:note || '' }); });
+    },
+    dismiss:function(id){
+      var n = need(); if (n) return n;
+      return retry(function(){ return db.doc('pending/' + state.uid + '/items/' + id).delete(); }).then(function(){ return setIndex(state.uid, id, null); });
+    },
+    act:function(id, patch){ if (!db) return Promise.reject({ code:'offline' }); return retry(function(){ return db.doc('acts/' + id).set(Object.assign({}, patch, { at:Date.now() })); }); },
+    togglePlus:function(id){
+      var n = need(); if (n) return n;
+      var ids = Object.assign({}, cache.plusMine); if (ids[id]) delete ids[id]; else ids[id] = true;
+      return retry(function(){ return db.doc('plus/' + state.uid).set({ ids:ids }); });
+    }
+  };
+  function sharedInit(){
+    var fail = function(){ state.off = true; state.ready = true; emit('status'); };
+    if (!(window.claude && window.claude.use)) return fail();
+    var errH = function(){ state.off = true; emit('status'); };
+    Promise.all([Promise.resolve(null), window.claude.use('user')]).then(function(r){
+      db = r[0]; var user = r[1];
+      if (!db) return fail();
+      return Promise.all([user ? user.canEdit() : false, user ? user.id() : null]).then(function(x){
+        state.admin = !!x[0]; state.uid = x[1] || null; state.ready = true; emit('status');
+        ['entries', 'news', 'posts', 'duels'].forEach(function(k){
+          db.collection(COLL[k]).limit(500).onSnapshot(function(s){ cache[k] = s.docs.filter(function(d){ return d.exists; }).map(function(d){ return Object.assign({}, d.data(), { id:d.id }); }); emit(k); }, errH);
+        });
+        db.collection('acts').limit(1000).onSnapshot(function(s){ var m = {}; s.docs.forEach(function(d){ if (d.exists) m[d.id] = d.data(); }); cache.acts = m; emit('acts'); }, errH);
+        db.collection('plus').limit(1000).onSnapshot(function(s){
+          var c = {}, mine = {};
+          s.docs.forEach(function(d){ if (!d.exists) return; var ids = (d.data() || {}).ids || {}; Object.keys(ids).forEach(function(p){ if (!ids[p]) return; c[p] = (c[p] || 0) + 1; if (d.id === state.uid) mine[p] = true; }); });
+          cache.plusCounts = c; cache.plusMine = mine; emit('plus');
+        }, errH);
+        if (state.uid) db.doc('pending/' + state.uid).onSnapshot(function(d){ cache.mine = indexList(state.uid, d.exists ? d.data() : null); emit('mine'); }, errH);
+        if (state.admin) db.collection('pending').limit(1000).onSnapshot(function(s){
+          var all = []; s.docs.forEach(function(d){ if (d.exists) all = all.concat(indexList(d.id, d.data())); });
+          cache.pending = all; emit('pending');
+        }, errH);
+      });
+    }).catch(fail);
+  }
+
+  var api = MODE === 'db' ? shared : local;
+  function errorText(err, verb){
+    var c = err && err.code;
+    if (c === 'no_id') return 'Your account couldn\'t be identified, so nothing was ' + verb + '. Make sure you\'re signed in to Claude, then reload.';
+    if (c === 'offline') return 'Can\'t reach Game Journal right now, so nothing was ' + verb + '. Reload and try again.';
+    if (c === 'quota_exceeded') return MODE === 'db' ? 'Game Journal is full, so nothing was ' + verb + '. Ask an admin to clear old entries.' : 'This browser is out of space, so nothing was ' + verb + '. Try a smaller image.';
+    if (c === 'invalid_argument') return 'Nothing was ' + verb + ': it may be too large, or your access doesn\'t allow posting. Try a smaller image, or ask the owner for Contributor access.';
+    if (c === 'gone') return 'That submission was already handled by another admin.';
+    return 'Something went wrong, so nothing was ' + verb + '. Try again.';
+  }
+  if (MODE === 'db') sharedInit(); else localInit();
+  return {
+    mode:MODE, state:state, LABEL:LABEL, on:on, get:function(k){ return cache[k]; },
+    reviewOn:function(){ return MODE === 'db' || state.admin; },
+    submit:api.submit, getItem:api.getItem, approve:api.approve, reject:api.reject, dismiss:api.dismiss,
+    act:api.act, togglePlus:api.togglePlus, errorText:errorText
+  };
+})();
+</script>
+
+<script>
+(function(){
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+var store = {
+  get: function(k, d){ try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set: function(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } }
+};
+var rid = function(p){ return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); };
+
+/* ---------- Existing project model (OUTPUT) ---------- */
+var PALETTES = {
+  purple: { bg:'var(--pp-bg)', ink:'var(--pp-ink)', border:'var(--pp-line)' },
+  blue:   { bg:'var(--pb-bg)', ink:'var(--pb-ink)', border:'var(--pb-line)' },
+  green:  { bg:'var(--pg-bg)', ink:'var(--pg-ink)', border:'var(--pg-line)' }
+};
+var GENRE_CODES = { 'Adventure':'ADV', 'Racing':'RCE', 'Card Games':'CRD', 'RPG':'RPG', 'Story':'STY' };
+var GENRES = ['Adventure','Racing','Card Games','RPG','Story'];
+var EXISTING = [
+  { id:'seed1', title:'Hollow Circuit', tag:'#HollowCircuit', genre:'RPG', kind:'LOG', ref:'LOG_042', code:'RPG', p:'purple', ago:'2h ago', author:'byte_rook', body:'New progress on the RPG! Dungeon 2 is fully playable and the boss has a second phase.', publishedAt: 0 },
+  { id:'seed2', title:'Lost Signal', tag:'#LostSignal', genre:'Adventure', kind:'LOG', ref:'LOG_017', code:'ADV', p:'green', ago:'5h ago', author:'nullwalker', body:'A new looting system has been made. Chests now roll from a seed, so every run feels different.', publishedAt: 0 },
+  { id:'seed3', title:'Neon Drift', tag:'#NeonDrift', genre:'Racing', kind:'LOG', ref:'LOG_088', code:'RCE', p:'blue', ago:'yesterday', author:'apex_kai', body:'Tuned the drift physics. Tires finally grip on wet asphalt without feeling floaty.', publishedAt: 0 },
+  { id:'seed4', title:'Ashfall Tales', tag:'#AshfallTales', genre:'Story', kind:'LOG', ref:'LOG_009', code:'STY', p:'purple', ago:'2d ago', author:'quill.exe', body:'A story re-write is taking place. Act 2 is getting a new antagonist and a tighter ending.', publishedAt: 0 },
+  { id:'seed5', title:'Deckbreaker', tag:'#Deckbreaker', genre:'Card Games', kind:'LOG', ref:'LOG_031', code:'CRD', p:'blue', ago:'3d ago', author:'shuffle_bot', body:'Back to the drawing board. The mana curve broke in playtests, so the starter deck is getting rebuilt.', publishedAt: 0 },
+  { id:'seed6', title:'Pixel Paladin', tag:'#PixelPaladin', genre:'RPG', kind:'PROJECT', ref:'PRJ_003', code:'PRJ', p:'green', ago:'4d ago', author:'pal_dev', body:'Looking for a pixel artist and a chiptune composer to join the party for a small turn-based RPG.', publishedAt: 0 }
+];
+
+var published = [];   // entries from the shared store
+var db = null;
+var dbState = 'connecting';
+var viewerKey = store.get('gj.viewer', null) || (function(){ var k = rid('v_'); store.set('gj.viewer', k); return k; })();
+
+function ago(ts){
+  if (!ts) return '';
+  var s = Math.max(1, Math.round((Date.now() - ts) / 1000));
+  if (s < 60) return 'just now';
+  var m = Math.round(s / 60); if (m < 60) return m + 'm ago';
+  var h = Math.round(m / 60); if (h < 24) return h + 'h ago';
+  var d = Math.round(h / 24); return d === 1 ? 'yesterday' : d + 'd ago';
+}
+function allEntries(){
+  var live = published.slice().sort(function(a,b){ return (b.publishedAt||0) - (a.publishedAt||0); });
+  return live.concat(EXISTING);
+}
+
+/* Existing card component, unchanged look */
+function cardHTML(c){
+  var pal = PALETTES[c.p] || PALETTES.purple;
+  return '<a href="#discover" class="card">' +
+    '<div class="art scan" style="background-color:' + pal.bg + ';border-bottom:1px solid ' + pal.border + '">' +
+      '<div class="meta"><span class="kind" style="border-color:' + pal.border + ';color:' + pal.ink + '">' + esc(c.kind) + '</span><span style="color:var(--muted)">' + esc(c.ref) + '</span></div>' +
+      '<div class="code wm" data-text="' + esc(c.code) + '" style="color:' + pal.ink + '">' + esc(c.code) + '</div>' +
+    '</div>' +
+    '<div class="body">' +
+      '<div style="display:flex;gap:8px;align-items:center;font-size:11px"><span class="chip-g">' + esc(c.genre) + '</span><span style="color:var(--muted)">' + esc(c.ago || ago(c.publishedAt)) + '</span></div>' +
+      '<h3>' + esc(c.title) + '</h3>' +
+      '<div class="tag">' + esc(c.tag) + '</div>' +
+      '<p>' + esc(c.body) + '</p>' +
+      '<div class="foot"><span>@' + esc(c.author) + '</span><span style="color:var(--violet-ink)">open ↗</span></div>' +
+    '</div></a>';
+}
+
+/* ---------- Feed rendering ---------- */
+var feedState = { genre:'ALL', route:'discover', q:'' };
+function renderPills(){
+  var names = ['ALL'].concat(GENRES);
+  $('pills').innerHTML = names.map(function(n){
+    return '<button type="button" class="pill" data-genre="' + esc(n) + '" aria-pressed="' + (feedState.genre === n) + '">' + esc(n) + '</button>';
+  }).join('');
+}
+function renderFeed(){
+  var q = feedState.q.trim().toLowerCase();
+  var list = allEntries().filter(function(c){
+    if (feedState.route === 'projects' && c.kind !== 'PROJECT') return false;
+    if (feedState.route === 'my-logs' && c.viewerKey !== viewerKey) return false;
+    if (feedState.genre !== 'ALL' && c.genre !== feedState.genre) return false;
+    if (q && (c.title + ' ' + c.tag + ' ' + c.body + ' ' + c.author).toLowerCase().indexOf(q.replace(/^#/, '')) === -1) return false;
+    return true;
+  });
+  $('grid').innerHTML = list.map(cardHTML).join('');
+  var emptyMsg = feedState.route === 'my-logs'
+    ? 'You haven\'t published anything yet. Tap <b>+</b> to start a project or post a log.'
+    : 'Nothing matches that filter yet.';
+  if (!list.length) $('grid').innerHTML = '<div class="empty" style="grid-column:1/-1">' + emptyMsg + '</div>';
+  $('feedPrompt').innerHTML = 'root@gamejournal:~$ ' + ({ 'discover':'discover --all', 'projects':'discover --type=project', 'my-logs':'ls ~/my_logs' })[feedState.route] + '<span class="caret" aria-hidden="true"></span>';
+  $('feedHeading').textContent = feedState.route === 'my-logs' ? '// PUBLISHED BY YOU' : '// GENRES';
+  renderDrafts();
+}
+function renderDrafts(){
+  var drafts = store.get('gj.drafts', []);
+  $('draftStat').textContent = drafts.length + (drafts.length === 1 ? ' draft' : ' drafts');
+  if (feedState.route !== 'my-logs') { $('mine').innerHTML = ''; return; }
+  var sent = GJD.get('mine') || [];
+  var pendHTML = sent.length ? '<h2 style="margin:48px 0 0;font-family:var(--display);font-size:14px;letter-spacing:.18em;color:var(--muted)">// SENT FOR REVIEW · ONLY YOU</h2><div class="drafts">' + sent.map(function(p){
+      var rej = p.status === 'rejected';
+      return '<div class="draft"><div style="min-width:0"><div class="t">' + esc(p.title || 'Untitled') + '</div><div class="s">' + esc(GJD.LABEL[p.kind] || 'Submission') + ' · sent ' + esc(ago(p.at)) + ' · ' +
+        (rej ? '<span style="color:var(--red)">not approved</span>' + (p.note ? ': ' + esc(p.note) : '') : '<span style="color:var(--blue-ink)">waiting for an admin</span>') + '</div></div>' +
+        (rej ? '<div class="actions"><button type="button" class="btn" data-dismiss="' + esc(p.id) + '">Dismiss</button></div>' : '') + '</div>';
+    }).join('') + '</div>' : '';
+  $('mine').innerHTML = pendHTML + '<h2 style="margin:48px 0 0;font-family:var(--display);font-size:14px;letter-spacing:.18em;color:var(--muted)">// DRAFTS · ONLY YOU</h2>' +
+    (drafts.length ? '<div class="drafts">' + drafts.map(function(d){
+      var t = d.mode === 'log' ? (d.data.headline || 'Untitled log') : (d.data.title || 'Untitled project');
+      return '<div class="draft"><div style="min-width:0"><div class="t">' + esc(t) + '</div><div class="s">' + (d.mode === 'log' ? 'Log' : 'Project') + ' · saved ' + esc(ago(d.savedAt)) + '</div></div>' +
+        '<div class="actions"><button type="button" class="btn" data-open-draft="' + esc(d.id) + '">Keep editing</button><button type="button" class="btn danger" data-del-draft="' + esc(d.id) + '">Delete</button></div></div>';
+    }).join('') + '</div>'
+    : '<div class="empty" style="margin-top:16px">No drafts. Drafts stay on this device and never appear on the feed.</div>');
+}
+
+$('pills').addEventListener('click', function(e){
+  var b = e.target.closest('[data-genre]'); if (!b) return;
+  feedState.genre = b.getAttribute('data-genre'); renderPills(); renderFeed();
+});
+$('q').addEventListener('input', function(e){ feedState.q = e.target.value; var h = location.hash.slice(1), X = window.GJX && window.GJX.views[h]; if (X && !X.form) X.render(h); else if (!$('view-feed').hidden) renderFeed(); else location.hash = '#discover'; });
+$('mine').addEventListener('click', function(e){
+  var dm = e.target.closest('[data-dismiss]');
+  if (dm) { GJD.dismiss(dm.getAttribute('data-dismiss')).then(renderDrafts, function(err){ toast(GJD.errorText(err, 'changed'), true); }); return; }
+  var o = e.target.closest('[data-open-draft]'), d = e.target.closest('[data-del-draft]');
+  if (o) { pendingDraft = o.getAttribute('data-open-draft'); location.hash = '#create'; }
+  if (d) { var id = d.getAttribute('data-del-draft'); store.set('gj.drafts', store.get('gj.drafts', []).filter(function(x){ return x.id !== id; })); renderDrafts(); toast('Draft deleted.'); }
+});
+
+/* FAB */
+$('fab').addEventListener('click', function(){
+  var open = $('menu').hidden; $('menu').hidden = !open; $('fab').setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('click', function(e){
+  if (!$('menu').hidden && !e.target.closest('.fabzone')) { $('menu').hidden = true; $('fab').setAttribute('aria-expanded', 'false'); }
+});
+
+/* ---------- Formatter (INPUT) ---------- */
+var COLORS = [
+  { name:'Night',  hex:'#07070A', p:null },
+  { name:'Violet', hex:'#7C3AED', p:'purple' },
+  { name:'Cobalt', hex:'#3D8BFF', p:'blue' },
+  { name:'Lime',   hex:'#4ADE80', p:'green' },
+  { name:'Forest', hex:'#14532D', p:'green' }
+];
+var ROLES = ['Pixel artist','Programmer','Writer','Composer','Playtester'];
+var UTYPES = ['Progress','New system','Story re-write','Back to the drawing board'];
+
+function blankForm(){
+  return { mode:'project', entryId: rid('prj_'), draftId:null,
+    title:'', tag:'', handle: store.get('gj.handle', ''), desc:'', demands:[''], bg:'', timeline:[], roles:[],
+    proj:'', headline:'', lbody:'', utype:'Progress',
+    genre:'', c1:'Night', c2:'Lime', image:null, imageName:'' };
+}
+var F = blankForm();
+var publishing = false, pendingDraft = null, triedSubmit = false;
+
+function cleanTag(s){ return String(s || '').replace(/^#+/, '').replace(/[^A-Za-z0-9]/g, ''); }
+function tagFromTitle(t){ return String(t || '').replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean).map(function(w){ return w[0].toUpperCase() + w.slice(1); }).join('').slice(0, 30); }
+function paletteFor(c1, c2){
+  var a = COLORS.find(function(c){ return c.name === c2; }), b = COLORS.find(function(c){ return c.name === c1; });
+  return (a && a.p) || (b && b.p) || 'purple';
+}
+function refFor(id, kind){
+  var n = 0; for (var i = 0; i < id.length; i++) n = (n * 31 + id.charCodeAt(i)) % 1000;
+  return (kind === 'LOG' ? 'LOG_' : 'PRJ_') + String(n).padStart(3, '0');
+}
+function projectOptions(){
+  var seen = {}, out = [];
+  allEntries().forEach(function(c){ if (!seen[c.title]) { seen[c.title] = 1; out.push(c); } });
+  return out;
+}
+
+/* Validation */
+function validate(){
+  var e = {};
+  if (F.mode === 'project') {
+    if (!F.title.trim()) e.title = 'Add a project title.';
+    var tg = cleanTag(F.tag || tagFromTitle(F.title));
+    if (F.tag && /[^#A-Za-z0-9]/.test(F.tag)) e.tag = 'Use letters and numbers only, with no spaces.';
+    else if (tg.length < 2) e.tag = 'Add a hashtag of at least 2 characters.';
+    if (!/^[a-z0-9_.]{2,24}$/.test(F.handle)) e.handle = F.handle.length < 2 ? 'Add a handle of at least 2 characters, like mrlarper.' : 'Handles can only use lowercase letters, numbers, underscores (_) and dots (.).';
+    if (F.desc.trim().length < 10) e.desc = 'Write at least a sentence (10+ characters) describing the project.';
+    if (!F.demands.some(function(d){ return d.trim(); })) e.demands = 'Add at least one demand or key point.';
+  } else {
+    if (!F.headline.trim()) e.head = 'Add a one-line headline.';
+    if (F.lbody.trim().length < 10) e.lbody = 'Describe what you built (10+ characters).';
+    if (!/^[a-z0-9_.]{2,24}$/.test(F.handle)) e.lhandle = F.handle.length < 2 ? 'Add a handle of at least 2 characters, like mrlarper.' : 'Handles can only use lowercase letters, numbers, underscores (_) and dots (.).';
+  }
+  if (!F.genre) e.genre = 'Pick a genre so the feed can file it.';
+  return e;
+}
+var FIELD_FOR = { title:'f-title', tag:'f-tag', handle:'f-handle', desc:'f-desc', demands:'addDemand', head:'f-head', lbody:'f-lbody', lhandle:'f-lhandle', genre:'genres' };
+var NAMES = { title:'Project title', tag:'Hashtag', handle:'Handle', desc:'Description', demands:'Demands', head:'Headline', lbody:'Log body', lhandle:'Handle', genre:'Genre' };
+function showErrors(errs){
+  Object.keys(FIELD_FOR).forEach(function(k){
+    var el = $('e-' + k); if (!el) return;
+    var msg = triedSubmit ? errs[k] : null;
+    el.hidden = !msg; el.textContent = msg || '';
+    var inp = $(FIELD_FOR[k]); if (inp && inp.classList.contains('fld')) inp.setAttribute('aria-invalid', msg ? 'true' : 'false');
+  });
+  var keys = Object.keys(errs);
+  if (triedSubmit && keys.length) {
+    $('summary').hidden = false;
+    $('summary').innerHTML = 'Fix ' + keys.length + (keys.length === 1 ? ' thing' : ' things') + ' before publishing:<ul>' +
+      keys.map(function(k){ return '<li><a href="#create" data-focus="' + FIELD_FOR[k] + '">' + esc(NAMES[k]) + '</a>: ' + esc(errs[k]) + '</li>'; }).join('') + '</ul>';
+  } else { $('summary').hidden = true; }
+}
+$('summary').addEventListener('click', function(e){
+  var a = e.target.closest('[data-focus]'); if (!a) return; e.preventDefault();
+  var t = $(a.getAttribute('data-focus')); if (t) { t.scrollIntoView({ block:'center' }); (t.focus ? t : t.querySelector('button')).focus(); }
+});
+
+/* Map formatter data -> existing project record */
+function toRecord(){
+  var kind = F.mode === 'log' ? 'LOG' : 'PROJECT';
+  var now = Date.now();
+  if (kind === 'PROJECT') {
+    var tag = '#' + cleanTag(F.tag || tagFromTitle(F.title));
+    return {
+      // fields the existing card displays
+      title: F.title.trim(), tag: tag, genre: F.genre, kind: 'PROJECT',
+      ref: refFor(F.entryId, 'PROJECT'), code: GENRE_CODES[F.genre] || 'PRJ',
+      p: paletteFor(F.c1, F.c2), author: F.handle, body: F.desc.trim(), publishedAt: now,
+      // kept with the project, not shown on the card
+      demands: F.demands.map(function(d){ return d.trim(); }).filter(Boolean),
+      background: F.bg.trim(), timeline: F.timeline.filter(function(t){ return (t.when || '').trim() || (t.what || '').trim(); }),
+      lookingFor: F.roles.slice(), colors: { primary: F.c1, secondary: F.c2 },
+      image: F.image || null, viewerKey: viewerKey, status: 'published'
+    };
+  }
+  var proj = projectOptions().find(function(c){ return c.title === F.proj; }) || {};
+  return {
+    title: proj.title || F.proj, tag: proj.tag || '', genre: F.genre, kind: 'LOG',
+    ref: refFor(F.entryId, 'LOG'), code: GENRE_CODES[F.genre] || 'LOG',
+    p: proj.p || 'purple', author: F.handle, body: (F.headline.trim() + ' ' + F.lbody.trim()).trim(), publishedAt: now,
+    headline: F.headline.trim(), details: F.lbody.trim(), updateType: F.utype,
+    image: F.image || null, viewerKey: viewerKey, status: 'published'
+  };
+}
+
+/* Render the formatter UI from F */
+function renderForm(){
+  var isLog = F.mode === 'log';
+  $('modeLog').setAttribute('aria-pressed', String(isLog));
+  $('modeProject').setAttribute('aria-pressed', String(!isLog));
+  $('projectFields').hidden = isLog; $('projectFields').style.display = isLog ? 'none' : 'flex';
+  $('logFields').hidden = !isLog;
+  $('colorBlock').hidden = isLog;
+  $('pointsBox').hidden = isLog;
+  var label = isLog ? 'Post log' : 'Publish project';
+  if (!publishing) { $('publish').textContent = label; $('publishTop').textContent = label; }
+  $('fPrompt').innerHTML = 'root@gamejournal:~$ new_entry --type=' + (isLog ? 'log' : 'project') + '<span class="caret" aria-hidden="true"></span>';
+  $('visLine').textContent = F.draftId ? 'draft saved · only you can see this' : 'draft · only you can see this';
+
+  $('f-title').value = F.title; $('f-tag').value = F.tag; $('f-handle').value = F.handle; $('f-lhandle').value = F.handle;
+  $('f-desc').value = F.desc; $('f-bg').value = F.bg; $('f-head').value = F.headline; $('f-lbody').value = F.lbody;
+  $('f-tag').placeholder = F.title ? '#' + (tagFromTitle(F.title) || 'YourProject') : '#YourProject';
+
+  var opts = projectOptions();
+  if (!F.proj && opts.length) F.proj = opts[0].title;
+  $('f-proj').innerHTML = opts.map(function(o){ return '<option' + (o.title === F.proj ? ' selected' : '') + '>' + esc(o.title) + '</option>'; }).join('');
+
+  renderDemands(); renderTimeline(); renderChips(); renderImage(); updateLive();
+}
+function renderDemands(){
+  $('demands').innerHTML = F.demands.map(function(d, i){
+    return '<div class="row"><span class="idx" aria-hidden="true">' + String(i + 1).padStart(2, '0') + '</span>' +
+      '<input class="fld" id="f-dem-' + i + '" data-dem="' + i + '" maxlength="140" value="' + esc(d) + '" placeholder="' + (i === 0 ? 'Improve anti-cheat systems.' : 'Another point…') + '" aria-label="Point ' + (i + 1) + '">' +
+      '<button type="button" class="iconbtn" data-dem-del="' + i + '" aria-label="Remove point ' + (i + 1) + '"' + (F.demands.length < 2 ? ' disabled' : '') + '><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+  }).join('');
+  $('addDemand').disabled = F.demands.length >= 10;
+}
+function renderTimeline(){
+  $('timeline').innerHTML = F.timeline.length ? F.timeline.map(function(t, i){
+    return '<div class="row"><input class="fld date" id="f-tw-' + i + '" data-tl="' + i + '" data-k="when" maxlength="24" value="' + esc(t.when) + '" placeholder="Mar 2026" aria-label="Milestone ' + (i + 1) + ' date">' +
+      '<input class="fld" id="f-tt-' + i + '" data-tl="' + i + '" data-k="what" maxlength="140" value="' + esc(t.what) + '" placeholder="What happened or will happen" aria-label="Milestone ' + (i + 1) + ' description">' +
+      '<button type="button" class="iconbtn" data-tl-del="' + i + '" aria-label="Remove milestone ' + (i + 1) + '"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>';
+  }).join('') : '<div style="font-size:12px;color:var(--muted)">No milestones yet.</div>';
+}
+function renderChips(){
+  $('genres').innerHTML = GENRES.map(function(g){ return '<button type="button" class="chip" data-g="' + esc(g) + '" aria-pressed="' + (F.genre === g) + '">' + esc(g) + '</button>'; }).join('');
+  $('roles').innerHTML = ROLES.map(function(r){ return '<button type="button" class="chip role" data-role="' + esc(r) + '" aria-pressed="' + (F.roles.indexOf(r) > -1) + '">' + esc(r) + '</button>'; }).join('');
+  $('utypes').innerHTML = UTYPES.map(function(u){ return '<button type="button" class="chip" data-ut="' + esc(u) + '" aria-pressed="' + (F.utype === u) + '">' + esc(u) + '</button>'; }).join('');
+  ['c1','c2'].forEach(function(k){
+    $(k).innerHTML = COLORS.map(function(c){ return '<button type="button" class="sw" data-c="' + k + '" data-name="' + c.name + '" aria-pressed="' + (F[k] === c.name) + '"><i style="background:' + c.hex + '"></i>' + c.name + '</button>'; }).join('');
+  });
+}
+function renderImage(){
+  $('imgPrev').hidden = !F.image; if (F.image) $('imgPrev').src = F.image;
+  $('imgName').textContent = F.image ? (F.imageName || 'Image attached') : 'Drop an image here, or browse';
+  $('imgClear').hidden = !F.image;
+}
+function updateLive(){
+  document.querySelectorAll('[data-count]').forEach(function(n){
+    var el = $(n.getAttribute('data-count')); n.textContent = el.value.length + ' / ' + (el.getAttribute('maxlength') === '31' ? 30 : el.getAttribute('maxlength'));
+  });
+  var pal = paletteFor(F.c1, F.c2);
+  $('paletteNote').textContent = F.c1 + ' / ' + F.c2 + ' · the feed card uses its ' + ({ purple:'violet', blue:'cobalt', green:'green' })[pal] + ' style.';
+  var errs = validate(); showErrors(errs);
+  var isLog = F.mode === 'log';
+  var checks = isLog
+    ? [['headline', !errs.head], ['what you built', !errs.lbody], ['handle', !errs.lhandle], ['genre', !errs.genre], ['image (optional)', !!F.image, true]]
+    : [['title', !errs.title], ['hashtag', !errs.tag], ['handle', !errs.handle], ['description', !errs.desc], ['demands', !errs.demands], ['genre', !errs.genre], ['background (optional)', !!F.bg.trim(), true], ['timeline (optional)', F.timeline.some(function(t){ return t.what; }), true], ['image (optional)', !!F.image, true]];
+  $('checklist').innerHTML = checks.map(function(c){ return '<div' + (c[1] ? ' class="ok"' : '') + '>' + (c[1] ? '✓ ' : (c[2] ? '○ ' : '✗ ')) + esc(c[0]) + '</div>'; }).join('');
+  var r = toRecord();
+  var rows = [['kind', r.kind], ['title', r.title || '—'], ['tag', r.tag || '—'], ['genre', r.genre || '—'], ['card text', r.body ? (r.body.length > 60 ? r.body.slice(0, 60) + '…' : r.body) : '—'], ['style', r.p], ['author', r.author ? '@' + r.author : '—']];
+  $('mapping').innerHTML = rows.map(function(x){ return '<tr><td>' + esc(x[0]) + '</td><td>' + esc(x[1]) + '</td></tr>'; }).join('');
+  $('keptNote').innerHTML = isLog ? 'Kept with the log, not on the card: update type' + (F.image ? ', image' : '') + '.'
+    : 'Kept with the project, not on the card: ' + ['demands', 'background', 'timeline', 'looking for', 'colors', 'image'].join(', ') + '.';
+  var pts = F.demands.filter(function(d){ return d.trim(); });
+  $('pointsList').innerHTML = pts.length ? pts.map(function(d){ return '<li>' + esc(d) + '</li>'; }).join('') : '<li style="color:var(--muted)">Your demands show here.</li>';
+  var ready = !Object.keys(errs).length;
+  $('fstatus').textContent = publishing ? 'Sending…' : (ready ? 'Ready to publish.' : 'Nothing goes live until you publish.') + (GJD.reviewOn() ? ' An admin reviews it first.' : '');
+}
+
+/* Inputs */
+var bind = { 'f-title':'title', 'f-tag':'tag', 'f-desc':'desc', 'f-bg':'bg', 'f-head':'headline', 'f-lbody':'lbody' };
+Object.keys(bind).forEach(function(id){ $(id).addEventListener('input', function(e){ F[bind[id]] = e.target.value; if (id === 'f-title') $('f-tag').placeholder = '#' + (tagFromTitle(F.title) || 'YourProject'); updateLive(); }); });
+['f-handle','f-lhandle'].forEach(function(id){ $(id).addEventListener('input', function(e){
+  var v = e.target.value.toLowerCase().replace(/^\s*@/, '').replace(/\s+/g, '_').replace(/[^a-z0-9_.]/g, '').replace(/_+/g, '_').slice(0, 24); if (v !== e.target.value) e.target.value = v;
+  F.handle = v; $(id === 'f-handle' ? 'f-lhandle' : 'f-handle').value = v; updateLive();
+}); });
+$('f-proj').addEventListener('change', function(e){ F.proj = e.target.value; updateLive(); });
+$('demands').addEventListener('input', function(e){ var i = e.target.getAttribute('data-dem'); if (i != null) { F.demands[+i] = e.target.value; updateLive(); } });
+$('demands').addEventListener('click', function(e){ var b = e.target.closest('[data-dem-del]'); if (!b) return; F.demands.splice(+b.getAttribute('data-dem-del'), 1); renderDemands(); updateLive(); });
+$('addDemand').addEventListener('click', function(){ F.demands.push(''); renderDemands(); updateLive(); $('f-dem-' + (F.demands.length - 1)).focus(); });
+$('timeline').addEventListener('input', function(e){ var i = e.target.getAttribute('data-tl'); if (i != null) { F.timeline[+i][e.target.getAttribute('data-k')] = e.target.value; updateLive(); } });
+$('timeline').addEventListener('click', function(e){ var b = e.target.closest('[data-tl-del]'); if (!b) return; F.timeline.splice(+b.getAttribute('data-tl-del'), 1); renderTimeline(); updateLive(); });
+$('addMilestone').addEventListener('click', function(){ F.timeline.push({ when:'', what:'' }); renderTimeline(); updateLive(); $('f-tw-' + (F.timeline.length - 1)).focus(); });
+$('form').addEventListener('click', function(e){
+  var g = e.target.closest('[data-g]'), r = e.target.closest('[data-role]'), u = e.target.closest('[data-ut]'), c = e.target.closest('[data-c]');
+  if (g) { F.genre = g.getAttribute('data-g'); }
+  else if (r) { var n = r.getAttribute('data-role'), k = F.roles.indexOf(n); if (k > -1) F.roles.splice(k, 1); else F.roles.push(n); }
+  else if (u) { F.utype = u.getAttribute('data-ut'); }
+  else if (c) { F[c.getAttribute('data-c')] = c.getAttribute('data-name'); }
+  else return;
+  var sel = g ? '[data-g="' + g.getAttribute('data-g') + '"]' : r ? '[data-role="' + r.getAttribute('data-role') + '"]' : u ? '[data-ut="' + u.getAttribute('data-ut') + '"]' : '[data-c="' + c.getAttribute('data-c') + '"][data-name="' + c.getAttribute('data-name') + '"]';
+  renderChips(); updateLive();
+  var again = $('form').querySelector(sel); if (again) again.focus();
+});
+$('modeLog').addEventListener('click', function(){ if (F.mode !== 'log') { F.mode = 'log'; F.entryId = rid('log_'); triedSubmit = false; renderForm(); history.replaceState(null, '', '#create-log'); } });
+$('modeProject').addEventListener('click', function(){ if (F.mode !== 'project') { F.mode = 'project'; F.entryId = rid('prj_'); triedSubmit = false; renderForm(); history.replaceState(null, '', '#create'); } });
+
+/* Image: downscale, keep as data URL inside the stored record */
+function takeFile(file){
+  if (!file) return;
+  if (!/^image\/(png|jpeg|gif|webp)$/.test(file.type)) { toast('That file type isn\'t supported. Use PNG, JPG, GIF or WebP.', true); return; }
+  var fr = new FileReader();
+  fr.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      var s = Math.min(1, 800 / Math.max(img.width, img.height));
+      var cv = document.createElement('canvas'); cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      var url = cv.toDataURL('image/jpeg', 0.78);
+      if (url.length > 180000) url = cv.toDataURL('image/jpeg', 0.55);
+      F.image = url; F.imageName = file.name; renderImage(); updateLive();
+    };
+    img.onerror = function(){ toast('Couldn\'t read that image. Try another file.', true); };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+$('f-img').addEventListener('change', function(e){ takeFile(e.target.files[0]); e.target.value = ''; });
+$('imgClear').addEventListener('click', function(){ F.image = null; F.imageName = ''; renderImage(); updateLive(); });
+['dragenter','dragover'].forEach(function(t){ $('drop').addEventListener(t, function(e){ e.preventDefault(); $('drop').classList.add('over'); }); });
+['dragleave','drop'].forEach(function(t){ $('drop').addEventListener(t, function(e){ e.preventDefault(); $('drop').classList.remove('over'); }); });
+$('drop').addEventListener('drop', function(e){ takeFile(e.dataTransfer.files[0]); });
+
+/* Drafts: device-only, never sent to the shared feed */
+function saveDraft(){
+  var drafts = store.get('gj.drafts', []);
+  var copy = JSON.parse(JSON.stringify(F));
+  if (!F.draftId) F.draftId = copy.draftId = rid('d_');
+  var rec = { id: F.draftId, mode: F.mode, savedAt: Date.now(), data: copy };
+  var i = drafts.findIndex(function(d){ return d.id === F.draftId; });
+  if (i > -1) drafts[i] = rec; else drafts.unshift(rec);
+  if (store.set('gj.drafts', drafts)) { toast('Draft saved. Only you can see it, in ./my_logs.'); renderForm(); }
+  else toast('This browser blocked saving. Your draft is still in the form.', true);
+}
+$('saveDraft').addEventListener('click', saveDraft);
+$('saveDraft2').addEventListener('click', saveDraft);
+$('discard').addEventListener('click', function(){ var m = F.mode; F = blankForm(); F.mode = m; triedSubmit = false; renderForm(); toast('Form cleared.'); });
+
+/* Publish: one record per entryId, success only after the store confirms */
+function doPublish(){
+  if (publishing) return;
+  triedSubmit = true;
+  var errs = validate();
+  if (Object.keys(errs).length) { updateLive(); $('summary').focus(); return; }
+  if (!db) { toast(dbState === 'connecting' ? 'Still connecting to the feed. Try again in a moment.' : 'Publishing isn\'t available in this view. Save a draft and open Game Journal on claude.ai to publish.', true); return; }
+  publishing = true;
+  ['publish','publishTop','saveDraft','saveDraft2'].forEach(function(id){ $(id).disabled = true; });
+  $('publish').textContent = $('publishTop').textContent = 'Publishing…';
+  updateLive();
+  var rec = toRecord();
+  rec.id = F.entryId;
+  GJD.submit('entries', rec).then(function(res){
+    store.set('gj.handle', F.handle);
+    if (F.draftId) store.set('gj.drafts', store.get('gj.drafts', []).filter(function(d){ return d.id !== F.draftId; }));
+    var kind = F.mode, pend = res && res.pending;
+    publishing = false; F = blankForm(); F.mode = kind; if (kind === 'log') F.entryId = rid('log_'); triedSubmit = false;
+    ['publish','publishTop','saveDraft','saveDraft2'].forEach(function(x){ $(x).disabled = false; });
+    feedState.genre = 'ALL'; renderPills();
+    location.hash = pend ? '#my-logs' : '#discover';
+    toast(pend ? (kind === 'log' ? 'Log sent for review. It goes live once an admin approves it.' : 'Project sent for review. It goes live once an admin approves it.')
+      : (kind === 'log' ? 'Log posted to your feed on this device.' : 'Project published to your feed on this device.'));
+  }).catch(function(err){
+    publishing = false;
+    ['publish','publishTop','saveDraft','saveDraft2'].forEach(function(x){ $(x).disabled = false; });
+    renderForm();
+    toast(GJD.errorText(err, 'published'), true);
+  });
+}
+$('form').addEventListener('submit', function(e){ e.preventDefault(); doPublish(); });
+$('publishTop').addEventListener('click', doPublish);
+
+/* ---------- Toast ---------- */
+var tt;
+function toast(msg, bad){ var t = $('toast'); t.textContent = msg; t.classList.toggle('bad', !!bad); t.hidden = false; clearTimeout(tt); tt = setTimeout(function(){ t.hidden = true; }, 4200); }
+
+/* ---------- Routing ---------- */
+window.GJ = { store:store, esc:esc, rid:rid, toast:function(m, b){ toast(m, b); }, allEntries:allEntries, ago:ago, q:function(){ return feedState.q; }, route:function(){ route(); } };
+function route(){
+  var h = (location.hash || '#discover').slice(1);
+  var X = window.GJX && window.GJX.views[h];
+  var create = !X && (h === 'create' || h === 'create-log');
+  $('view-feed').hidden = create || !!X; $('view-create').hidden = !create;
+  document.querySelectorAll('.xview').forEach(function(v){ v.hidden = !(X && v.id === X.el); });
+  $('fabzone').hidden = create || !!(X && X.form);
+  $('menu').hidden = true; $('fab').setAttribute('aria-expanded', 'false');
+  var navKey = X ? X.nav : (create ? '' : (h === 'projects' || h === 'my-logs' ? h : 'discover'));
+  document.querySelectorAll('.nav a').forEach(function(a){ if (a.getAttribute('data-route') === navKey) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if (X) { X.render(h); window.scrollTo(0, 0); return; }
+  if (create) {
+    if (pendingDraft) {
+      var d = store.get('gj.drafts', []).find(function(x){ return x.id === pendingDraft; });
+      if (d) { F = Object.assign(blankForm(), d.data); F.draftId = d.id; }
+      pendingDraft = null;
+    } else if (!publishing) {
+      var want = h === 'create-log' ? 'log' : 'project';
+      if (F.mode !== want) { F.mode = want; F.entryId = rid(want === 'log' ? 'log_' : 'prj_'); triedSubmit = false; }
+    }
+    renderForm(); window.scrollTo(0, 0);
+    setTimeout(function(){ $(F.mode === 'log' ? 'f-head' : 'f-title').focus({ preventScroll:true }); }, 0);
+  } else {
+    feedState.route = (h === 'projects' || h === 'my-logs') ? h : 'discover';
+    renderFeed();
+  }
+}
+window.addEventListener('hashchange', route);
+
+/* ---------- Shared store: existing project system ---------- */
+$('avatar').textContent = (store.get('gj.handle', '') || 'gj').slice(0, 2).toUpperCase();
+
+/* Black / White glitch palette (remembered on this device) */
+var swapT;
+function setPalette(t, animate){
+  if (t !== 'white') t = 'black';
+  document.documentElement.setAttribute('data-gj', t);
+  document.querySelectorAll('[data-gj-set]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.getAttribute('data-gj-set') === t)); });
+  store.set('gj.palette', t);
+  if (animate) { document.body.classList.remove('gj-swap'); void document.body.offsetWidth; document.body.classList.add('gj-swap'); clearTimeout(swapT); swapT = setTimeout(function(){ document.body.classList.remove('gj-swap'); }, 400); }
+}
+document.querySelector('.themesw').addEventListener('click', function(e){ var b = e.target.closest('[data-gj-set]'); if (b) setPalette(b.getAttribute('data-gj-set'), true); });
+setPalette(store.get('gj.palette', 'black'), false);
+renderPills(); route();
+
+var setNet = function(txt, color){ $('netStatus').textContent = txt; $('netStatus').style.color = color; };
+function netLine(){
+  var st = GJD.state;
+  if (GJD.mode === 'local') setNet(st.admin ? '● this device · admin' : '● this device', 'var(--green)');
+  else if (!st.ready) setNet('● connecting', 'var(--muted)');
+  else if (st.off) setNet('○ offline', 'var(--red)');
+  else setNet(st.admin ? '● online · admin' : '● online', 'var(--green)');
+}
+GJD.on('status', function(){
+  netLine();
+  dbState = GJD.state.ready ? (GJD.state.off ? 'off' : 'on') : 'connecting';
+  db = dbState === 'on' ? true : null;
+  document.querySelectorAll('[data-admin-only]').forEach(function(el){ el.hidden = !GJD.state.admin; });
+  if (location.hash.slice(1) === 'review') route();
+});
+GJD.on('entries', function(list){
+  published = (list || []).filter(function(x){ return x && x.status === 'published' && x.title && x.kind; });
+  if (!$('view-feed').hidden) renderFeed();
+});
+GJD.on('mine', function(){ if (!$('view-feed').hidden) renderDrafts(); });
+if (!$('view-feed').hidden) renderFeed();
+
+setInterval(function(){ if (!$('view-feed').hidden) renderFeed(); }, 60000);
+})();
+</script>
+<script>
+/* ===== News bank · Bulletin · 1-on-1 (inputs and outputs kept separate) ===== */
+(function(){
+'use strict';
+var G = window.GJ; if (!G) return;
+var esc = G.esc, store = G.store;
+var $ = function(id){ return document.getElementById(id); };
+var K = { duels:'gj.x.duels', posts:'gj.x.bulletin', news:'gj.x.news', plus:'gj.x.plus', drafts:'gj.x.formdrafts' };
+var KIND = {}; KIND[K.duels] = 'duels'; KIND[K.posts] = 'posts'; KIND[K.news] = 'news';
+var load = function(k){ var v = GJD.get(KIND[k]); return Array.isArray(v) ? v : []; };
+var HOUR = 3600e3, DAY = 24 * HOUR;
+
+function dateStr(off){ var d = new Date(); d.setDate(d.getDate() + (off || 0)); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function at(days, h, m){ var d = new Date(); d.setDate(d.getDate() + days); d.setHours(h, m || 0, 0, 0); return d.getTime(); }
+function localDT(ts){ var d = new Date(ts), p = function(n){ return String(n).padStart(2, '0'); }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes()); }
+function fmtWhen(ts){ var d = new Date(ts); return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' }); }
+function fmtDate(s){ var p = String(s || '').split('-'); if (p.length !== 3) return ''; return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }); }
+function qmatch(text){ var q = (G.q() || '').trim().toLowerCase().replace(/^#/, ''); return !q || String(text).toLowerCase().indexOf(q) > -1; }
+function safeUrl(u){ return /^https?:\/\/[^\s.]+\.[^\s]+$/i.test(String(u || '').trim()) ? String(u).trim() : ''; }
+function domain(u){ try { return new URL(u).hostname.replace(/^www\./, ''); } catch(e){ return ''; } }
+function trunc(s, n){ s = String(s || ''); return s.length > n ? s.slice(0, n) + '…' : s; }
+function projects(){ var seen = {}, out = []; G.allEntries().forEach(function(c){ if (!seen[c.title]) { seen[c.title] = 1; out.push({ title:c.title, tag:c.tag }); } }); return out; }
+function titles(){ return projects().map(function(p){ return p.title; }); }
+function tagOf(t){ var p = projects().find(function(x){ return x.title === t; }); return p ? p.tag : ''; }
+function myHandle(){ return store.get('gj.handle', '') || ''; }
+function cleanHandle(s){ return String(s || '').toLowerCase().replace(/^\s*@/, '').replace(/\s+/g, '_').replace(/[^a-z0-9_.]/g, '').replace(/_+/g, '_').slice(0, 24); }
+var exTag = '<span class="extag">EXAMPLE</span>';
+
+function head(cmd, title, sub, href, cta){
+  return '<section class="hero"><div style="flex:1 1 520px;min-width:0"><p class="prompt">root@gamejournal:~$ ' + esc(cmd) + '<span class="caret" aria-hidden="true"></span></p>' +
+    '<h1 class="wm" data-text="' + esc(title) + '">' + esc(title) + '</h1><p class="lede">' + sub + '</p></div>' +
+    (href ? '<a class="btn primary" style="height:48px;padding:0 22px" href="' + href + '">' + esc(cta) + '</a>' : '') + '</section>';
+}
+function pills(list, cur, attr){ return '<div class="pills">' + list.map(function(n){ return '<button type="button" class="pill" ' + attr + '="' + esc(n) + '" aria-pressed="' + (cur === n) + '">' + esc(n) + '</button>'; }).join('') + '</div>'; }
+function refocus(root, sel){ var b = root.querySelector(sel); if (b) b.focus(); }
+
+/* ---------- Fictional examples, labelled EXAMPLE on screen ---------- */
+var EX_DUELS = [
+  { id:'exd1', example:true, kind:'1v1 match', game:'Neon Drift', host:'apex_kai', invite:'', when:at(2, 19, 30), length:'30 min', platform:'PC', level:'Intermediate', notes:'Best of 3 on the wet-asphalt track. Testing the new drift physics.', status:'open', opponent:'', createdAt:Date.now() - 5 * HOUR },
+  { id:'exd2', example:true, kind:'Playtest session', game:'Pixel Paladin', host:'pal_dev', invite:'', when:at(4, 17, 0), length:'45 min', platform:'Voice / video call', level:'Any level', notes:'Play the first two battles and tell me where the turn order feels slow.', status:'accepted', opponent:'quill.exe', createdAt:Date.now() - DAY },
+  { id:'exd3', example:true, kind:'Feedback session', game:'Ashfall Tales', host:'quill.exe', invite:'', when:at(6, 20, 0), length:'1 hour', platform:'Voice / video call', level:'Any level', notes:'Walk through the Act 2 rewrite with me and flag anything confusing.', status:'open', opponent:'', createdAt:Date.now() - 2 * DAY }
+];
+var EX_POSTS = [
+  { id:'exp1', example:true, about:'project', project:'Hollow Circuit', tag:'#HollowCircuit', type:'Shout-out', message:'The second boss phase in Dungeon 2 is brutal in the best way. The arena shrinking mid-fight is a great touch.', author:'nullwalker', createdAt:Date.now() - 3 * HOUR, plus:4 },
+  { id:'exp2', example:true, about:'seen', seenTitle:'A level editor that lets players trade rooms by code', seenLink:'', type:'Spotted', message:'Watched a small studio stream their in-game editor. Players shared custom rooms with a short code. Could work for a roguelike here.', author:'byte_rook', createdAt:Date.now() - 9 * HOUR, plus:2 },
+  { id:'exp3', example:true, about:'project', project:'Deckbreaker', tag:'#Deckbreaker', type:'Feedback', message:'Try capping the starter deck at two 5-cost cards. The early turns felt empty in my playtest.', author:'apex_kai', createdAt:Date.now() - DAY, plus:1 },
+  { id:'exp4', example:true, about:'project', project:'Lost Signal', tag:'#LostSignal', type:'Question', message:'Are the seeded chests shared between players in co-op, or does each player roll their own?', author:'shuffle_bot', createdAt:Date.now() - 2 * DAY, plus:0 }
+];
+var EX_NEWS = [
+  { id:'exn1', example:true, headline:'Pixel Paladin opens two spots in its party', category:'Community', summary:'The turn-based RPG project is looking for a pixel artist and a chiptune composer. Details are on its project card.', link:'', source:'Game Journal', date:dateStr(-4), related:'Pixel Paladin', author:'pal_dev', createdAt:Date.now() - 4 * DAY },
+  { id:'exn2', example:true, headline:'Deckbreaker rebuilds its starter deck after playtests', category:'Patch notes', summary:'The mana curve broke in testing, so the starter deck is being redesigned before the next build.', link:'', source:'Game Journal', date:dateStr(-3), related:'Deckbreaker', author:'shuffle_bot', createdAt:Date.now() - 3 * DAY }
+];
+
+/* ================= OUTPUT: News bank ================= */
+var NEWS_CATS = ['Industry', 'Patch notes', 'Events', 'Community', 'Releases'];
+var newsState = { cat:'All' };
+function renderNews(){
+  var items = load(K.news).concat(EX_NEWS).filter(function(n){
+    return (newsState.cat === 'All' || n.category === newsState.cat) && qmatch(n.headline + ' ' + n.summary + ' ' + (n.source || '') + ' ' + (n.related || '') + ' ' + n.author);
+  }).sort(function(a, b){ return String(b.date).localeCompare(String(a.date)) || (b.createdAt - a.createdAt); });
+  var rows = items.map(function(n){
+    var url = safeUrl(n.link), src = n.source || domain(url);
+    var h = url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(n.headline) + ' ↗</a>' : esc(n.headline);
+    return '<article class="nrow"><div class="ndate">' + esc(fmtDate(n.date)) + '</div><div style="min-width:0">' +
+      '<div class="nmeta"><span class="ncat">' + esc(n.category) + '</span>' + (n.related ? '<span class="nrel">' + esc(tagOf(n.related) || n.related) + '</span>' : '') + (n.example ? exTag : '') + '</div>' +
+      '<h3>' + h + '</h3><p>' + esc(n.summary) + '</p><div class="nsrc">' + (src ? esc(src) + ' · ' : '') + 'added by @' + esc(n.author) + '</div></div></article>';
+  }).join('');
+  $('view-news').innerHTML = '<main class="feed wrap">' +
+    head('news --bank', 'NEWS BANK', 'Game news worth keeping: patch notes, events, releases and community updates saved by players. Filter by category or search from the bar above.', '#add-news', '+ Add news') +
+    '<section style="margin-top:40px" aria-label="Filter news">' + pills(['All'].concat(NEWS_CATS), newsState.cat, 'data-ncat') + '</section>' +
+    '<section class="news" aria-label="News">' + (rows || '<div class="empty" style="margin-top:20px">No news here yet. Use <b>+ Add news</b> to save the first story.</div>') + '</section></main>';
+}
+$('view-news').addEventListener('click', function(e){
+  var b = e.target.closest('[data-ncat]'); if (!b) return;
+  newsState.cat = b.getAttribute('data-ncat'); renderNews(); refocus($('view-news'), '[data-ncat="' + newsState.cat + '"]');
+});
+
+/* ================= OUTPUT: Bulletin ================= */
+var BUL_F = ['All', 'About projects', 'Things seen'];
+var bulState = { f:'All' };
+function plusMap(){ return GJD.get('plusMine') || {}; }
+function renderBulletin(){
+  var mine = plusMap();
+  var posts = load(K.posts).concat(EX_POSTS).filter(function(p){
+    if (bulState.f === 'About projects' && p.about !== 'project') return false;
+    if (bulState.f === 'Things seen' && p.about !== 'seen') return false;
+    return qmatch(p.message + ' ' + (p.project || '') + ' ' + (p.tag || '') + ' ' + (p.seenTitle || '') + ' ' + p.author + ' ' + p.type);
+  }).sort(function(a, b){ return b.createdAt - a.createdAt; });
+  var notes = posts.map(function(p){
+    var on = !!mine[p.id], n = (p.plus || 0) + ((GJD.get('plusCounts') || {})[p.id] || 0);
+    var url = safeUrl(p.seenLink);
+    var re = p.about === 'project'
+      ? '<div class="re">re: <span>' + esc(p.tag || p.project) + '</span> · ' + esc(p.project) + '</div>'
+      : '<div class="re">seen: <span class="seen">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(p.seenTitle) + ' ↗</a>' : esc(p.seenTitle)) + '</span></div>';
+    return '<article class="note"><div class="nhead"><span class="ptype t-' + esc(String(p.type).toLowerCase().replace(/[^a-z]/g, '')) + '">' + esc(String(p.type).toUpperCase()) + '</span>' + (p.example ? exTag : '') + '</div>' + re +
+      '<p>' + esc(p.message) + '</p><div class="nfoot"><span>@' + esc(p.author) + ' · ' + esc(G.ago(p.createdAt)) + '</span>' +
+      '<button type="button" class="plus" data-plus="' + esc(p.id) + '" aria-pressed="' + on + '" aria-label="Plus one this post. ' + n + ' so far">+1 <b>' + n + '</b></button></div></article>';
+  }).join('');
+  $('view-bulletin').innerHTML = '<main class="feed wrap">' +
+    head('cat bulletin.txt', 'BULLETIN', 'Shout-outs, feedback and questions about projects on Game Journal, plus cool things people have spotted elsewhere.', '#new-post', '+ New post') +
+    '<section style="margin-top:40px" aria-label="Filter posts">' + pills(BUL_F, bulState.f, 'data-bf') + '</section>' +
+    (notes ? '<section class="bboard" aria-label="Posts">' + notes + '</section>' : '<div class="empty" style="margin-top:28px">No posts here yet. Use <b>+ New post</b> to pin the first one.</div>') + '</main>';
+}
+$('view-bulletin').addEventListener('click', function(e){
+  var f = e.target.closest('[data-bf]'), p = e.target.closest('[data-plus]');
+  if (f) { bulState.f = f.getAttribute('data-bf'); renderBulletin(); refocus($('view-bulletin'), '[data-bf="' + bulState.f + '"]'); }
+  if (p) { var id = p.getAttribute('data-plus'); GJD.togglePlus(id).then(function(){ renderBulletin(); refocus($('view-bulletin'), '[data-plus="' + id + '"]'); }, function(err){ G.toast(GJD.errorText(err, 'saved'), true); }); }
+});
+
+/* ================= OUTPUT: 1-on-1 board ================= */
+var DUEL_F = ['Open', 'Accepted', 'Mine', 'All'];
+var duelState = { f:'Open', accepting:null };
+function allDuels(){
+  var m = {}, acts = GJD.get('acts') || {};
+  load(K.duels).forEach(function(d){ m[d.id] = d; }); EX_DUELS.forEach(function(d){ if (!m[d.id]) m[d.id] = d; });
+  return Object.keys(m).map(function(k){ var a = acts[k]; return a ? Object.assign({}, m[k], { status:a.status || m[k].status, opponent:a.opponent != null ? a.opponent : m[k].opponent }) : m[k]; });
+}
+function upsertDuel(d){ return GJD.act(d.id, { status:d.status, opponent:d.opponent || '' }); }
+function duelAct(d, patch, msg){ upsertDuel(Object.assign({}, d, patch)).then(function(){ renderDuels(); G.toast(msg); }, function(err){ G.toast(GJD.errorText(err, 'saved'), true); }); }
+function duelStatus(d){ if (d.status === 'done' || d.status === 'cancelled') return d.status; if (d.status === 'open' && d.when < Date.now()) return 'expired'; return d.status; }
+function duelCard(d, me){
+  var st = duelStatus(d), id = esc(d.id);
+  var mineHost = me && d.host === me, mineOpp = me && d.opponent === me;
+  var slot = d.opponent ? '@' + d.opponent : (d.invite ? 'invite: @' + d.invite : 'OPEN SLOT');
+  var acts = '';
+  if (st === 'open' && !mineHost) {
+    if (d.invite && me && d.invite !== me) acts = '<span class="status">Only @' + esc(d.invite) + ' can accept this one.</span>';
+    else if (duelState.accepting === d.id) acts = '<div class="acc"><label class="sr" for="acc-' + id + '">Your handle</label><input class="fld" id="acc-' + id + '" placeholder="your handle" autocomplete="off" value="' + esc(me) + '"><button type="button" class="btn primary" data-acc-ok="' + id + '">Confirm</button><button type="button" class="btn ghost" data-acc-x>Cancel</button></div>';
+    else acts = '<button type="button" class="btn primary" data-acc="' + id + '">Accept 1-on-1</button>';
+  }
+  if (st === 'open' && mineHost) acts += '<button type="button" class="btn danger" data-cancel="' + id + '">Cancel request</button>';
+  if (st === 'accepted' && (mineHost || mineOpp)) acts += '<button type="button" class="btn" data-done="' + id + '">Mark done</button>' + (mineOpp ? '<button type="button" class="btn ghost" data-leave="' + id + '">Back out</button>' : '');
+  if (st === 'expired') acts = '<span class="status">This time has passed.</span>';
+  return '<article class="duel"><div class="vs scan">' +
+    '<div class="side"><div class="k">HOST</div><div class="hn">@' + esc(d.host) + '</div></div>' +
+    '<div class="x wm" data-text="VS" aria-hidden="true">VS</div>' +
+    '<div class="side r"><div class="k">' + (d.opponent ? 'PLAYER 2' : 'SLOT') + '</div><div class="hn' + (d.opponent ? '' : ' open') + '">' + esc(slot) + '</div></div></div>' +
+    '<div class="dbody"><div class="dtop"><span class="st st-' + st + '">' + st.toUpperCase() + '</span><span class="dkind">' + esc(d.kind) + '</span>' + (d.example ? exTag : '') + '</div>' +
+    '<h3>' + esc(d.game) + '</h3><dl class="dl"><dt>WHEN</dt><dd>' + esc(fmtWhen(d.when)) + '</dd><dt>LENGTH</dt><dd>' + esc(d.length) + '</dd><dt>PLATFORM</dt><dd>' + esc(d.platform) + '</dd><dt>LEVEL</dt><dd>' + esc(d.level) + '</dd></dl>' +
+    (d.notes ? '<p>' + esc(d.notes) + '</p>' : '') +
+    '<p class="err" id="accerr-' + id + '" hidden></p>' +
+    (acts ? '<div class="actions">' + acts + '</div>' : '') + '</div></article>';
+}
+function renderDuels(){
+  var me = myHandle();
+  var list = allDuels().filter(function(d){
+    var st = duelStatus(d);
+    if (st === 'cancelled') return false;
+    if (duelState.f === 'Open' && st !== 'open') return false;
+    if (duelState.f === 'Accepted' && st !== 'accepted') return false;
+    if (duelState.f === 'Mine' && !(me && (d.host === me || d.opponent === me))) return false;
+    return qmatch(d.kind + ' ' + d.game + ' ' + d.host + ' ' + (d.opponent || '') + ' ' + (d.notes || '') + ' ' + d.platform);
+  }).sort(function(a, b){ return a.when - b.when; });
+  var empty = duelState.f === 'Mine' ? (me ? 'You have no 1-on-1s yet.' : 'Post or accept a 1-on-1 and it shows up here.') : 'Nothing here right now. Use <b>+ New 1-on-1</b> to set one up.';
+  $('view-1on1').innerHTML = '<main class="feed wrap">' +
+    head('challenge --list', '1-ON-1', 'Matches, playtests, feedback sessions and collab chats between two players. Accept an open slot, or post your own.', '#new-1on1', '+ New 1-on-1') +
+    '<section style="margin-top:40px" aria-label="Filter 1-on-1s">' + pills(DUEL_F, duelState.f, 'data-df') + '</section>' +
+    '<section style="margin-top:28px" aria-label="1-on-1 requests">' + (list.length ? '<div class="grid">' + list.map(function(d){ return duelCard(d, me); }).join('') + '</div>' : '<div class="empty">' + empty + '</div>') + '</section></main>';
+}
+function findDuel(id){ return allDuels().find(function(d){ return d.id === id; }); }
+function acceptAs(d, h){
+  var err = $('accerr-' + d.id), fail = function(m){ if (err) { err.hidden = false; err.textContent = m; } };
+  if (!/^[a-z0-9_.]{2,24}$/.test(h)) return fail('Enter a handle of 2–24 lowercase letters, numbers, _ or .');
+  if (h === d.host) return fail('You\'re the host of this one.');
+  if (d.invite && d.invite !== h) return fail('Only @' + d.invite + ' can accept this one.');
+  upsertDuel(Object.assign({}, d, { status:'accepted', opponent:h })).then(function(){
+    store.set('gj.handle', h); duelState.accepting = null; renderDuels();
+    G.toast('You\'re in: ' + d.kind + ' with @' + d.host + ', ' + fmtWhen(d.when) + '.');
+  }, function(err){ fail(GJD.errorText(err, 'saved')); });
+}
+$('view-1on1').addEventListener('click', function(e){
+  var t = function(a){ var el = e.target.closest('[' + a + ']'); return el ? el.getAttribute(a) : null; };
+  var f = t('data-df'), acc = t('data-acc'), ok = t('data-acc-ok'), cx = e.target.closest('[data-acc-x]'), can = t('data-cancel'), dn = t('data-done'), lv = t('data-leave');
+  if (f) { duelState.f = f; duelState.accepting = null; renderDuels(); refocus($('view-1on1'), '[data-df="' + f + '"]'); return; }
+  if (acc) { var d = findDuel(acc), me = myHandle(); if (!d) return; if (me && (!d.invite || d.invite === me)) acceptAs(d, me); else { duelState.accepting = acc; renderDuels(); refocus($('view-1on1'), '#acc-' + acc); } return; }
+  if (ok) { var d2 = findDuel(ok); if (d2) acceptAs(d2, cleanHandle($('acc-' + ok).value)); return; }
+  if (cx) { duelState.accepting = null; renderDuels(); return; }
+  if (can) { var d3 = findDuel(can); if (d3) duelAct(d3, { status:'cancelled' }, 'Request cancelled.'); return; }
+  if (dn) { var d4 = findDuel(dn); if (d4) duelAct(d4, { status:'done' }, 'Marked done. GG.'); return; }
+  if (lv) { var d5 = findDuel(lv); if (d5) duelAct(d5, { status:'open', opponent:'' }, 'You backed out. The slot is open again.'); }
+});
+$('view-1on1').addEventListener('keydown', function(e){
+  if (e.key === 'Enter' && e.target.id && e.target.id.indexOf('acc-') === 0) { e.preventDefault(); var b = $('view-1on1').querySelector('[data-acc-ok="' + e.target.id.slice(4) + '"]'); if (b) b.click(); }
+});
+$('view-1on1').addEventListener('input', function(e){ if (e.target.id && e.target.id.indexOf('acc-') === 0) { var v = cleanHandle(e.target.value); if (v !== e.target.value) e.target.value = v; } });
+
+/* ================= INPUT: shared form engine ================= */
+var HANDLE = function(hint){ return { k:'handle', type:'handle', label:'YOUR HANDLE', name:'Your handle', req:true, max:24, ph:'mrlarper', hint:hint, def:myHandle }; };
+var SEEN = 'Something I saw', PROJ = 'A project on Game Journal', OTHER = 'Other game…';
+var FORMS = {
+  'new-1on1': {
+    title:'+ NEW 1-ON-1', cmd:'challenge --new', board:'#one-on-one', boardName:'1-on-1 board', submit:'Post 1-on-1', key:K.duels, idp:'d_',
+    intro:'Set up a match, playtest, feedback session or collab chat with one other player.',
+    done:'1-on-1 posted. It\'s on the board.',
+    fields:[
+      { group:'THE MATCH', k:'kind', type:'chips', label:'WHAT KIND OF 1-ON-1?', name:'Type', req:true, opts:['1v1 match', 'Playtest session', 'Feedback session', 'Collab chat'], def:'1v1 match' },
+      { k:'game', type:'select', label:'GAME OR PROJECT', name:'Game', req:true, opts:function(){ return titles().concat([OTHER]); }, def:function(){ return titles()[0] || OTHER; } },
+      { k:'gameOther', type:'text', label:'GAME NAME', name:'Game name', req:true, max:60, ph:'The game you want to play', show:function(v){ return v.game === OTHER; } },
+      { k:'level', type:'chips', label:'SKILL LEVEL', name:'Level', opts:['Any level', 'Beginner', 'Intermediate', 'Advanced'], def:'Any level' },
+      { group:'WHO & WHEN', k:'who', type:'chips', label:'WHO CAN ACCEPT?', name:'Who can accept', opts:['Open to anyone', 'Invite a specific player'], def:'Open to anyone' },
+      { k:'invite', type:'handle', label:'PLAYER HANDLE', name:'Invited player', req:true, max:24, ph:'nullwalker', hint:'Only this player can accept.', show:function(v){ return v.who === 'Invite a specific player'; }, check:function(s, v){ return s === v.handle ? 'You can\'t invite yourself.' : null; } },
+      { k:'when', type:'datetime', label:'WHEN', name:'Date and time', req:true, hint:'Your local time.', def:function(){ return localDT(at(1, 19, 0)); }, check:function(s){ var t = new Date(s).getTime(); if (isNaN(t)) return 'Pick a date and time.'; if (t < Date.now()) return 'Pick a time in the future.'; return null; } },
+      { k:'length', type:'chips', label:'LENGTH', name:'Length', opts:['15 min', '30 min', '45 min', '1 hour', '2 hours'], def:'30 min' },
+      { k:'platform', type:'chips', label:'PLATFORM', name:'Platform', opts:['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile', 'Voice / video call'], def:'PC' },
+      { group:'DETAILS', k:'notes', type:'area', label:'NOTES · OPTIONAL', name:'Notes', max:300, rows:3, ph:'Rules, what to test, or what you want feedback on.' },
+      HANDLE('Shown as the host. Spaces become _ as you type.')
+    ],
+    toRecord:function(v, id){ return { id:id, kind:v.kind, game:v.game === OTHER ? v.gameOther.trim() : v.game, host:v.handle, invite:v.who === 'Invite a specific player' ? v.invite : '', when:new Date(v.when).getTime(), length:v.length, platform:v.platform, level:v.level, notes:v.notes.trim(), status:'open', opponent:'', createdAt:Date.now() }; },
+    shows:function(r){ return [['type', r.kind], ['game', r.game || '—'], ['host', r.host ? '@' + r.host : '—'], ['slot', r.invite ? '@' + r.invite + ' only' : 'open to anyone'], ['when', isNaN(r.when) ? '—' : fmtWhen(r.when)], ['length', r.length], ['platform', r.platform], ['level', r.level], ['notes', r.notes ? trunc(r.notes, 40) : '—']]; },
+    after:function(){ duelState.f = 'Open'; }
+  },
+  'new-post': {
+    title:'+ NEW POST', cmd:'echo >> bulletin.txt', board:'#bulletin', boardName:'bulletin', submit:'Post to bulletin', key:K.posts, idp:'b_',
+    intro:'Give a shout-out, leave feedback or ask a question about someone\'s project, or share something cool you spotted.',
+    done:'Posted to the bulletin.',
+    fields:[
+      { group:'TOPIC', k:'about', type:'chips', label:'WHAT IS THIS ABOUT?', name:'Topic', req:true, opts:[PROJ, SEEN], def:PROJ },
+      { k:'project', type:'select', label:'WHICH PROJECT', name:'Project', req:true, opts:titles, def:function(){ return titles()[0] || ''; }, show:function(v){ return v.about === PROJ; } },
+      { k:'seenTitle', type:'text', label:'WHAT DID YOU SEE?', name:'What you saw', req:true, max:80, ph:'A speedrun that skipped the whole water level', show:function(v){ return v.about === SEEN; } },
+      { k:'seenLink', type:'url', label:'LINK · OPTIONAL', name:'Link', max:300, ph:'https://', hint:'Where others can see it too.', show:function(v){ return v.about === SEEN; } },
+      { group:'POST', k:'type', type:'chips', label:'POST TYPE', name:'Post type', opts:['Shout-out', 'Feedback', 'Spotted', 'Question'], def:'Shout-out' },
+      { k:'message', type:'area', label:'YOUR POST', name:'Post', req:true, min:10, max:500, rows:5, ph:'What stood out, what could be better, or what you want to ask.' },
+      HANDLE('Shown as @handle on your post.')
+    ],
+    toRecord:function(v, id){
+      var isP = v.about === PROJ;
+      return { id:id, about:isP ? 'project' : 'seen', project:isP ? v.project : '', tag:isP ? tagOf(v.project) : '', seenTitle:isP ? '' : v.seenTitle.trim(), seenLink:isP ? '' : safeUrl(v.seenLink), type:v.type, message:v.message.trim(), author:v.handle, createdAt:Date.now(), plus:0 };
+    },
+    shows:function(r){ return [['topic', r.about === 'project' ? (r.tag || r.project || '—') : (trunc(r.seenTitle, 40) || '—')], ['type', r.type], ['post', r.message ? trunc(r.message, 40) : '—'], ['author', r.author ? '@' + r.author : '—']]; },
+    after:function(){ bulState.f = 'All'; }
+  },
+  'add-news': {
+    title:'+ ADD NEWS', cmd:'news --add', board:'#news', boardName:'news bank', submit:'Add to news bank', key:K.news, idp:'n_',
+    intro:'Save a story for the news bank: a patch, an event, a release, or something happening in the community.',
+    done:'Added to the news bank.',
+    fields:[
+      { group:'THE STORY', k:'headline', type:'text', label:'HEADLINE', name:'Headline', req:true, max:120, ph:'Patch 1.4 adds ranked co-op' },
+      { k:'category', type:'chips', label:'CATEGORY', name:'Category', req:true, opts:NEWS_CATS, def:'', reqMsg:'Pick a category.' },
+      { k:'summary', type:'area', label:'SUMMARY', name:'Summary', req:true, min:10, max:300, rows:4, ph:'Two or three sentences on what happened and why it matters.' },
+      { k:'date', type:'date', label:'DATE', name:'Date', req:true, def:function(){ return dateStr(0); }, check:function(s){ return s > dateStr(0) ? 'Pick today or an earlier date.' : null; } },
+      { group:'SOURCE', k:'link', type:'url', label:'SOURCE LINK · OPTIONAL', name:'Source link', max:300, ph:'https://', hint:'Where people can read the full story.' },
+      { k:'source', type:'text', label:'SOURCE NAME · OPTIONAL', name:'Source name', max:40, ph:'Studio blog' },
+      { k:'related', type:'select', label:'RELATED PROJECT · OPTIONAL', name:'Related project', opts:function(){ return ['None'].concat(titles()); }, def:'None' },
+      HANDLE('Shown as "added by @handle".')
+    ],
+    toRecord:function(v, id){ return { id:id, headline:v.headline.trim(), category:v.category, summary:v.summary.trim(), date:v.date, link:safeUrl(v.link), source:v.source.trim(), related:v.related === 'None' ? '' : v.related, author:v.handle, createdAt:Date.now() }; },
+    shows:function(r){ return [['headline', r.headline ? trunc(r.headline, 40) : '—'], ['category', r.category || '—'], ['date', fmtDate(r.date) || '—'], ['source', r.source || domain(r.link) || '—'], ['related', r.related ? (tagOf(r.related) || r.related) : '—'], ['added by', r.author ? '@' + r.author : '—']]; },
+    after:function(){ newsState.cat = 'All'; }
+  }
+};
+
+var fstate = {}, curForm = null;
+function optsOf(f){ return typeof f.opts === 'function' ? f.opts() : (f.opts || []); }
+function shortLabel(f){ return f.label.replace(/ ·.*$/, ''); }
+function initState(key){
+  var F = FORMS[key], v = {}, saved = (store.get(K.drafts, {}) || {})[key] || {};
+  F.fields.forEach(function(f){ v[f.k] = f.def == null ? '' : (typeof f.def === 'function' ? f.def() : f.def); if (typeof saved[f.k] === 'string') v[f.k] = saved[f.k]; });
+  return { v:v, id:G.rid(F.idp), tried:false, busy:false };
+}
+function saveDraft(key){ var all = store.get(K.drafts, {}) || {}; all[key] = fstate[key].v; store.set(K.drafts, all); }
+function clearDraft(key){ var all = store.get(K.drafts, {}) || {}; delete all[key]; store.set(K.drafts, all); }
+function fieldErr(f, v){
+  if (f.show && !f.show(v)) return null;
+  var s = String(v[f.k] == null ? '' : v[f.k]).trim();
+  if (f.req && !s) return f.reqMsg || (f.type === 'chips' || f.type === 'select' ? 'Pick ' : 'Add ') + f.name.toLowerCase() + '.';
+  if (!s) return null;
+  if (f.type === 'handle' && !/^[a-z0-9_.]{2,24}$/.test(s)) return 'Use 2–24 lowercase letters, numbers, underscores (_) or dots (.).';
+  if (f.type === 'url' && !safeUrl(s)) return 'Enter a full link that starts with https://';
+  if (f.min && s.length < f.min) return 'Write at least ' + f.min + ' characters.';
+  return f.check ? f.check(s, v) : null;
+}
+function fieldHTML(f, v){
+  var id = 'x-' + f.k, val = v[f.k] == null ? '' : v[f.k], hidden = f.show && !f.show(v), lab = esc(f.label) + (f.req ? ' *' : '');
+  var h = '<div class="xf" id="xw-' + f.k + '"' + (hidden ? ' hidden' : '') + '>';
+  if (f.type === 'chips') {
+    h += '<span class="lbl" id="xl-' + f.k + '">' + lab + '</span><div class="chips" role="group" aria-labelledby="xl-' + f.k + '" id="' + id + '">' +
+      optsOf(f).map(function(o){ return '<button type="button" class="chip" data-xchip="' + f.k + '" data-val="' + esc(o) + '" aria-pressed="' + (val === o) + '">' + esc(o) + '</button>'; }).join('') + '</div>';
+  } else {
+    h += '<label class="lbl" for="' + id + '">' + lab + '</label>';
+    var c = ' class="fld" id="' + id + '" data-xk="' + f.k + '"' + (f.max ? ' maxlength="' + f.max + '"' : '') + (f.ph ? ' placeholder="' + esc(f.ph) + '"' : '');
+    if (f.type === 'area') h += '<textarea' + c + ' rows="' + (f.rows || 4) + '">' + esc(val) + '</textarea>';
+    else if (f.type === 'select') { var os = optsOf(f); if (os.indexOf(val) < 0) v[f.k] = val = os[0] || ''; h += '<select' + c + '>' + os.map(function(o){ return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'; }
+    else if (f.type === 'datetime') h += '<input type="datetime-local"' + c + ' value="' + esc(val) + '">';
+    else if (f.type === 'date') h += '<input type="date"' + c + ' max="' + dateStr(0) + '" value="' + esc(val) + '">';
+    else h += '<input type="' + (f.type === 'url' ? 'url' : 'text') + '"' + c + ' autocomplete="off" value="' + esc(val) + '"' + (f.type === 'url' ? ' inputmode="url"' : '') + '>';
+  }
+  var counter = f.max && (f.type === 'text' || f.type === 'area');
+  if (f.hint || counter) h += '<p class="hint"><span>' + esc(f.hint || '') + '</span>' + (counter ? '<span class="n" id="xn-' + f.k + '">' + String(val).length + ' / ' + f.max + '</span>' : '') + '</p>';
+  return h + '<p class="err" id="xe-' + f.k + '" hidden></p></div>';
+}
+function renderXForm(key){
+  curForm = key; var F = FORMS[key]; if (!fstate[key]) fstate[key] = initState(key); var S = fstate[key], v = S.v;
+  var h = '<div class="fhead"><div class="wrap"><a href="' + F.board + '" class="btn ghost" style="border:0;padding:0">← back to ' + esc(F.boardName) + '</a><span class="vis">draft · only you can see this</span>' +
+    '<div class="actions"><button type="button" class="btn primary" data-xsubmit>' + esc(F.submit) + '</button></div></div></div>' +
+    '<main class="fmain wrap"><p class="prompt" style="margin:0">root@gamejournal:~$ ' + esc(F.cmd) + '<span class="caret" aria-hidden="true"></span></p>' +
+    '<h1 class="wm" data-text="' + esc(F.title) + '">' + esc(F.title) + '</h1><p class="lede">' + esc(F.intro) + '</p>' +
+    '<div class="cols"><form class="fmt" id="xform" novalidate><div class="summary" id="xsum" role="alert" tabindex="-1" hidden></div>';
+  var open = false;
+  F.fields.forEach(function(f){ if (f.group) { if (open) h += '</fieldset>'; h += '<fieldset><legend>// ' + esc(f.group) + '</legend>'; open = true; } h += fieldHTML(f, v); });
+  if (open) h += '</fieldset>';
+  h += '<div class="actions"><button type="submit" class="btn primary" data-xsubmit>' + esc(F.submit) + '</button><button type="button" class="btn ghost" data-xclear>Clear form</button><span class="status" id="xstatus" role="status"></span></div></form>' +
+    '<aside class="prev" aria-label="Private review"><div class="prevbox"><h4>// REVIEW · PRIVATE</h4><div>Only you see this. It checks what you entered; it is not the public post.</div><div id="xcheck" style="margin-top:10px"></div></div>' +
+    '<div class="prevbox"><h4>// WHAT THE ' + esc(F.boardName.toUpperCase()) + ' WILL SHOW</h4><table class="map"><tbody id="xmap"></tbody></table></div></aside></div></main>';
+  $('view-xform').innerHTML = h;
+  refresh();
+  setTimeout(function(){ var first = $('view-xform').querySelector('.xf:not([hidden]) .fld, .xf:not([hidden]) .chip'); if (first) first.focus({ preventScroll:true }); }, 0);
+}
+function refresh(){
+  var key = curForm, F = FORMS[key], S = fstate[key], v = S.v, errs = {};
+  F.fields.forEach(function(f){
+    var w = $('xw-' + f.k); if (w) w.hidden = !!(f.show && !f.show(v));
+    var m = fieldErr(f, v); if (m) errs[f.k] = m;
+    var e = $('xe-' + f.k), show = S.tried && m; if (e) { e.hidden = !show; e.textContent = show ? m : ''; }
+    var el = $('x-' + f.k); if (el && el.classList.contains('fld')) el.setAttribute('aria-invalid', show ? 'true' : 'false');
+    var n = $('xn-' + f.k); if (n) n.textContent = String(v[f.k] || '').length + ' / ' + f.max;
+  });
+  var keys = Object.keys(errs), sum = $('xsum');
+  if (S.tried && keys.length) {
+    sum.hidden = false;
+    sum.innerHTML = 'Fix ' + keys.length + (keys.length === 1 ? ' thing' : ' things') + ' before posting:<ul>' + keys.map(function(k){
+      var f = F.fields.find(function(x){ return x.k === k; });
+      return '<li><a href="#' + key + '" data-xfocus="' + k + '">' + esc(shortLabel(f)) + '</a>: ' + esc(errs[k]) + '</li>';
+    }).join('') + '</ul>';
+  } else sum.hidden = true;
+  $('xcheck').innerHTML = F.fields.filter(function(f){ return !(f.show && !f.show(v)) && (f.type !== 'chips' || f.req); }).map(function(f){
+    var filled = String(v[f.k] || '').trim(), ok = f.req ? !errs[f.k] : !!filled;
+    return '<div' + (ok ? ' class="ok"' : '') + '>' + (ok ? '✓ ' : (f.req ? '✗ ' : '○ ')) + esc(f.name.toLowerCase()) + (f.req ? '' : ' (optional)') + '</div>';
+  }).join('');
+  $('xmap').innerHTML = F.shows(F.toRecord(v, S.id)).map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td></tr>'; }).join('');
+  $('xstatus').textContent = S.busy ? 'Sending…' : (keys.length ? 'Nothing goes live until you post.' : 'Ready to post.') + (GJD.reviewOn() ? ' An admin reviews it first.' : '');
+  return errs;
+}
+function setVal(k, val){ fstate[curForm].v[k] = val; saveDraft(curForm); refresh(); }
+var X = $('view-xform');
+function onField(e){
+  var k = e.target.getAttribute && e.target.getAttribute('data-xk'); if (!k || !curForm) return;
+  var f = FORMS[curForm].fields.find(function(x){ return x.k === k; }), val = e.target.value;
+  if (f.type === 'handle') { var c = cleanHandle(val); if (c !== val) e.target.value = val = c; }
+  setVal(k, val);
+}
+X.addEventListener('input', onField);
+X.addEventListener('change', onField);
+X.addEventListener('click', function(e){
+  var chip = e.target.closest('[data-xchip]'), clear = e.target.closest('[data-xclear]'), sub = e.target.closest('[data-xsubmit]'), foc = e.target.closest('[data-xfocus]');
+  if (chip) {
+    var k = chip.getAttribute('data-xchip');
+    chip.parentNode.querySelectorAll('[data-xchip]').forEach(function(b){ b.setAttribute('aria-pressed', String(b === chip)); });
+    setVal(k, chip.getAttribute('data-val'));
+  } else if (clear) { delete fstate[curForm]; clearDraft(curForm); renderXForm(curForm); G.toast('Form cleared.'); }
+  else if (sub && sub.type !== 'submit') submitX();
+  else if (foc) { e.preventDefault(); var t = $('x-' + foc.getAttribute('data-xfocus')); if (t) { t.scrollIntoView({ block:'center' }); (t.matches('.chips') ? t.querySelector('button') : t).focus(); } }
+});
+X.addEventListener('submit', function(e){ e.preventDefault(); submitX(); });
+function submitX(){
+  var key = curForm, F = FORMS[key], S = fstate[key];
+  if (!S || S.busy) return;
+  S.tried = true;
+  if (Object.keys(refresh()).length) { $('xsum').focus(); return; }
+  S.busy = true; X.querySelectorAll('[data-xsubmit]').forEach(function(b){ b.disabled = true; }); refresh();
+  var rec = F.toRecord(S.v, S.id);
+  GJD.submit(KIND[F.key], rec).then(function(res){
+    store.set('gj.handle', S.v.handle);
+    clearDraft(key); delete fstate[key]; if (F.after) F.after();
+    if (res && res.pending) { location.hash = '#my-logs'; G.toast('Sent for review. It goes live on the ' + F.boardName + ' once an admin approves it.'); }
+    else { location.hash = F.board; G.toast(F.done); }
+  }, function(err){
+    S.busy = false; X.querySelectorAll('[data-xsubmit]').forEach(function(b){ b.disabled = false; }); refresh();
+    G.toast(GJD.errorText(err, 'posted'), true);
+  });
+}
+
+/* ================= ADMIN: review queue (admins only) ================= */
+var revState = { kind:'All', details:{}, rejecting:null, note:'', busy:{} };
+var at2 = function(v){ return v ? '@' + v : ''; };
+var RF = {
+  entries:function(r){
+    if (r.kind === 'LOG') return [['TYPE', 'Log'], ['PROJECT', r.title], ['HEADLINE', r.headline], ['WHAT THEY BUILT', r.details], ['UPDATE TYPE', r.updateType], ['GENRE', r.genre], ['HANDLE', at2(r.author)], ['IMAGE', r.image ? { img:r.image } : '']];
+    return [['TYPE', 'Project'], ['TITLE', r.title], ['HASHTAG', r.tag], ['GENRE', r.genre], ['DESCRIPTION', r.body],
+      ['DEMANDS', (r.demands || []).length ? { list:r.demands } : ''], ['BACKGROUND', r.background],
+      ['TIMELINE', (r.timeline || []).length ? { list:r.timeline.map(function(t){ return (t.when ? t.when + ' · ' : '') + (t.what || ''); }) } : ''],
+      ['LOOKING FOR', (r.lookingFor || []).join(', ')], ['COLORS', r.colors ? r.colors.primary + ' / ' + r.colors.secondary : ''],
+      ['HANDLE', at2(r.author)], ['IMAGE', r.image ? { img:r.image } : '']];
+  },
+  news:function(r){ return [['HEADLINE', r.headline], ['CATEGORY', r.category], ['DATE', fmtDate(r.date)], ['SUMMARY', r.summary], ['SOURCE LINK', r.link], ['SOURCE', r.source], ['RELATED', r.related], ['HANDLE', at2(r.author)]]; },
+  posts:function(r){ return [['ABOUT', r.about === 'project' ? (r.project + (r.tag ? ' (' + r.tag + ')' : '')) : 'Something they saw'], ['WHAT THEY SAW', r.seenTitle], ['LINK', r.seenLink], ['TYPE', r.type], ['POST', r.message], ['HANDLE', at2(r.author)]]; },
+  duels:function(r){ return [['TYPE', r.kind], ['GAME', r.game], ['HOST', at2(r.host)], ['WHO CAN ACCEPT', r.invite ? '@' + r.invite + ' only' : 'Anyone'], ['WHEN', r.when ? fmtWhen(r.when) : ''], ['LENGTH', r.length], ['PLATFORM', r.platform], ['LEVEL', r.level], ['NOTES', r.notes]]; }
+};
+function ddHTML(v){
+  if (v && v.list) return '<ul>' + v.list.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+  if (v && v.img) return /^data:image\//.test(v.img) ? '<img src="' + esc(v.img) + '" alt="Submitted image">' : '';
+  return esc(v);
+}
+function pkey(p){ return p.uid + '/' + p.id; }
+function findP(k){ return (GJD.get('pending') || []).find(function(p){ return pkey(p) === k; }); }
+function waiting(){ return (GJD.get('pending') || []).filter(function(p){ return p.status === 'pending'; }).sort(function(a, b){ return a.at - b.at; }); }
+function rerReview(){ if (location.hash.slice(1) === 'review') renderReview(); }
+function loadDetail(p){
+  var k = pkey(p); if (revState.details[k]) return;
+  revState.details[k] = { loading:true };
+  GJD.getItem(p).then(function(d){ revState.details[k] = { rec:d.rec }; rerReview(); }, function(){ revState.details[k] = { error:true }; rerReview(); });
+}
+function rvCard(p){
+  var k = pkey(p), d = revState.details[k] || { loading:true }, busy = !!revState.busy[k], ek = esc(k);
+  var body = d.loading ? '<p class="status">Loading the full submission…</p>'
+    : d.error ? '<p class="status">Couldn\'t load this submission. Reload to try again.</p>'
+    : '<dl class="rvd">' + (RF[p.kind] ? RF[p.kind](d.rec || {}) : []).filter(function(r){ return r[1]; }).map(function(r){ return '<dt>' + esc(r[0]) + '</dt><dd>' + ddHTML(r[1]) + '</dd>'; }).join('') + '</dl>';
+  var acts = revState.rejecting === k
+    ? '<div class="rvnote"><label class="sr" for="rn-' + esc(p.id) + '">Reason, optional</label><input class="fld" id="rn-' + esc(p.id) + '" data-rn="' + ek + '" maxlength="140" placeholder="Reason, shown to the sender (optional)" value="' + esc(revState.note) + '"><button type="button" class="btn danger" data-rv-reject-ok="' + ek + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Reject') + '</button><button type="button" class="btn ghost" data-rv-cancel>Cancel</button></div>'
+    : '<button type="button" class="btn primary" data-rv-approve="' + ek + '"' + (busy || !d.rec ? ' disabled' : '') + '>' + (busy ? 'Working…' : 'Approve and publish') + '</button><button type="button" class="btn danger" data-rv-reject="' + ek + '"' + (busy ? ' disabled' : '') + '>Reject</button>';
+  return '<article class="rv"><div class="rvtop"><span class="rvk">' + esc((GJD.LABEL[p.kind] || 'Submission').toUpperCase()) + '</span><span>sent ' + esc(G.ago(p.at)) + (p.by ? ' by @' + esc(p.by) : '') + '</span></div>' +
+    '<h3>' + esc(p.title || 'Untitled') + '</h3>' + body + '<div class="actions">' + acts + '</div></article>';
+}
+function renderReview(){
+  var el = $('view-review');
+  if (!GJD.state.admin) { el.innerHTML = '<main class="feed wrap"><div class="empty" style="margin-top:56px">' + (GJD.state.ready ? 'This page is only for Game Journal admins.' : 'Checking your access…') + '</div></main>'; return; }
+  var all = waiting(), kinds = ['All', 'Project / log', 'News', 'Bulletin post', '1-on-1'];
+  var list = all.filter(function(p){ return revState.kind === 'All' || GJD.LABEL[p.kind] === revState.kind; });
+  list.forEach(loadDetail);
+  var demo = GJD.mode === 'local' ? '<div class="demo">Demo: on the public link, only what you submit in your own browser lands here. Visitors\' posts skip review and stay in their own browsers. The organization site has the real, shared queue.</div>' : '';
+  el.innerHTML = '<main class="feed wrap">' +
+    head('review --queue', 'REVIEW QUEUE', '<b>' + all.length + '</b> ' + (all.length === 1 ? 'submission is' : 'submissions are') + ' waiting. Nothing goes live until an admin approves it. Only admins can see this page.') + demo +
+    '<section style="margin-top:32px" aria-label="Filter by type">' + pills(kinds, revState.kind, 'data-rk') + '</section>' +
+    '<section class="rvq" aria-label="Submissions waiting for review">' + (list.length ? list.map(rvCard).join('') : '<div class="empty">Nothing waiting for review. New submissions show up here on their own.</div>') + '</section></main>';
+}
+function rvDone(k, ok, msg){ delete revState.busy[k]; if (ok) { revState.rejecting = null; revState.note = ''; delete revState.details[k]; } rerReview(); G.toast(msg, !ok); }
+$('view-review').addEventListener('click', function(e){
+  var g = function(a){ var el = e.target.closest('[' + a + ']'); return el ? el.getAttribute(a) : null; };
+  var rk = g('data-rk'), ap = g('data-rv-approve'), rj = g('data-rv-reject'), ok = g('data-rv-reject-ok');
+  if (rk) { revState.kind = rk; renderReview(); refocus($('view-review'), '[data-rk="' + rk + '"]'); return; }
+  if (ap) { var p = findP(ap); if (!p) return; revState.busy[ap] = true; renderReview();
+    GJD.approve(p).then(function(){ rvDone(ap, true, 'Approved. It\'s live on Game Journal now.'); }, function(err){ rvDone(ap, false, GJD.errorText(err, 'published')); }); return; }
+  if (rj) { revState.rejecting = rj; revState.note = ''; renderReview(); refocus($('view-review'), '[data-rn="' + rj + '"]'); return; }
+  if (ok) { var p2 = findP(ok); if (!p2) return; revState.busy[ok] = true; renderReview();
+    GJD.reject(p2, revState.note.trim()).then(function(){ rvDone(ok, true, 'Rejected. The sender will see it wasn\'t approved.'); }, function(err){ rvDone(ok, false, GJD.errorText(err, 'changed')); }); return; }
+  if (e.target.closest('[data-rv-cancel]')) { revState.rejecting = null; revState.note = ''; renderReview(); }
+});
+$('view-review').addEventListener('input', function(e){ if (e.target.hasAttribute('data-rn')) revState.note = e.target.value; });
+$('view-review').addEventListener('keydown', function(e){ if (e.key === 'Enter' && e.target.hasAttribute('data-rn')) { e.preventDefault(); var b = $('view-review').querySelector('[data-rv-reject-ok]'); if (b) b.click(); } });
+
+/* ---------- register views with the site router ---------- */
+window.GJX = { views:{
+  'news':       { el:'view-news',     nav:'news',       render:renderNews },
+  'bulletin':   { el:'view-bulletin', nav:'bulletin',   render:renderBulletin },
+  'one-on-one': { el:'view-1on1',     nav:'one-on-one', render:renderDuels },
+  'add-news':   { el:'view-xform',    nav:'news',       form:true, render:renderXForm },
+  'new-post':   { el:'view-xform',    nav:'bulletin',   form:true, render:renderXForm },
+  'new-1on1':   { el:'view-xform',    nav:'one-on-one', form:true, render:renderXForm },
+  'review':     { el:'view-review',   nav:'review',     render:renderReview }
+}};
+function rer(nav){ return function(){ var h = location.hash.slice(1), v = window.GJX.views[h]; if (v && v.nav === nav && !v.form) v.render(h); }; }
+GJD.on('news', rer('news')); GJD.on('posts', rer('bulletin')); GJD.on('plus', rer('bulletin'));
+GJD.on('duels', rer('one-on-one')); GJD.on('acts', rer('one-on-one'));
+GJD.on('pending', function(){ var n = waiting().length, a = $('navReview'); if (a) a.textContent = './review' + (n ? ' · ' + n : ''); rerReview(); });
+GJD.on('status', rer('review'));
+G.route();
+})();
+</script>
+<script>
+/* Hidden pirate flag: a new random hiding spot on every visit */
+(function(){
+  var svg = '<svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 3v27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M7 4h20l-3 6 3 6H7z" fill="currentColor"/>' +
+    '<rect x="10.5" y="7.2" width="13" height="5.6" rx="2.8" fill="var(--bg)"/>' +
+    '<path d="M13 10h2.4M14.2 8.8v2.4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>' +
+    '<circle cx="19.6" cy="9.1" r=".75" fill="currentColor"/><circle cx="21" cy="10.6" r=".75" fill="currentColor"/>' +
+    '<path d="M11.5 13.6l11 1.6M22.5 13.6l-11 1.6" stroke="var(--bg)" stroke-width="1.1" stroke-linecap="round"/></svg>';
+  var spots = [
+    function(){ return { el: document.querySelector('footer.site span'), how:'append' }; },
+    function(){ return { el: document.querySelector('section[aria-label="Filter by genre"] span'), how:'append' }; },
+    function(){ return { el: document.querySelector('.cta h2'), how:'append' }; },
+    function(){ return { el: document.querySelector('.hero .stat'), how:'append' }; },
+    function(){ return { el: document.querySelector('.hero p[style]'), how:'append' }; },
+    function(){ return { el: document.querySelector('.top .nav'), how:'append' }; },
+    function(){ return { el: document.getElementById('view-feed'), how:'float' }; }
+  ];
+  var pick = spots[Math.floor(Math.random() * spots.length)]();
+  if (!pick.el) pick = spots[0]();
+  if (!pick.el) return;
+  var b = document.createElement('button');
+  b.type = 'button'; b.className = 'jolly'; b.innerHTML = svg;
+  b.setAttribute('aria-label', 'Hidden pirate flag');
+  if (pick.how === 'float') {
+    b.classList.add('float');
+    pick.el.style.position = 'relative';
+    b.style.left = (8 + Math.random() * 80) + '%';
+    b.style.top = (25 + Math.random() * 60) + '%';
+  } else { b.style.marginLeft = '8px'; }
+  pick.el.appendChild(b);
+  var lines = ['Arr! You found the Jolly Controller.', 'Ye found the hidden flag. Respawn and seek it again.', 'Captain\'s log: the flag moves every time you reload.'];
+  b.addEventListener('click', function(){
+    var n = (window.GJ && GJ.store.get('gj.flags', 0)) || 0; n++;
+    if (window.GJ) { GJ.store.set('gj.flags', n); GJ.toast(lines[(n - 1) % lines.length] + ' Found ' + n + (n === 1 ? ' time.' : ' times.')); }
+  });
+})();
+</script>
+
+</body>
+</html>
